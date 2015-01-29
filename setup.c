@@ -7,6 +7,14 @@
 
 #define MAX_LINE 80
 
+char history[10][80]; //store the 10 previous commands 
+int numComm[10]; //store the command number 
+
+int counter; // index of the array
+int number;   // command number 
+
+void addCommands(int counter, int number, char *input);
+
 
  /*setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. 
    setup() sets the args parameter as a null-terminated string 
@@ -74,13 +82,6 @@ for ( i = 0; i < length; i++) {
 	args[ct] = NULL; //just in case the input line was > 80 
 }
 
-struct command {
-
-	int number;
-	char buffer[MAX_LINE];
-};
-
-
 
 
 int main (void) 
@@ -91,9 +92,10 @@ int main (void)
 
 	char *args[MAX_LINE/+1]; //command line (of 80) has max of 40 arguments 
 	
-	char history[10][MAX_LINE];
 
-	int counter = 0;
+	counter = 0;  //initialize the counter 
+	number = 1; // first command is numbered 1 
+	
 
 	while (1) {   //program terminates normally inside setup
 		background = 0; 
@@ -104,36 +106,61 @@ int main (void)
 
 		int child_status = fork(); 
 		int status;
+		int i;
 
 		if (child_status == 0) {
 
-			
-			int i = execvp(args[0], args);
+
+			i = execvp(args[0], args);
 			printf ("%d\n", i);
-			
+			//printf("%s\n", inputBuffer);
+
+
 			
 		}
 		else {
 			//waitpid(child_status);
+			//
 			if (background == 0) {
+				if (strcmp(args[0], "exit")==0){
+					exit(3);
+				}
 				pid_t w = waitpid(child_status, &status, 0);
 				if ( w == -1) {
 					perror("waitpid error"); 
 					exit(EXIT_FAILURE);
 				}
+				//printf("%d\n", i);
+				if (i != 0) {
+					
+				}
 			}
-			else {
-				background = 0; 
-			}
+			
+			
 		}
 
 	}
 
-		//if (strcmp (inputBuffer, "exit") == 0){
-		//	exit(0);
-		//}
+}
 
-	}
+void addCommands(int counter, int number, char *input) {
+
+	if (counter < 10) {
+				numComm[counter] = number;
+				strcpy(history[counter], input);
+			}
+			else {
+				int i; 
+				for (i = 0; i < 9; i++) {
+					*(numComm + i) = *(numComm+i+1);
+					strcpy(history[i], history[i+1]);
+				}
+				numComm[9] = number;
+				strcpy(history[9], input);
+			}
+
+
+}
 
 
 
