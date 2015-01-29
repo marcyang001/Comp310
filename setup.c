@@ -123,6 +123,7 @@ int main (void)
 			//
 			if (background == 0) {
 				if (strcmp(args[0], "exit")==0){
+					kill(child_status, SIGKILL);
 					exit(3);
 				}
 				pid_t w = waitpid(child_status, &status, 0);
