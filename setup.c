@@ -9,13 +9,14 @@
 
 char history[10][80]; //store the 10 previous commands 
 int numComm[10]; //store the command number 
+int comStatus[10]; //store 1 if the command is good else 0
 
 int counter; // index of the array
 int number;   // command number 
 
 void addCommands(int counter, int number, char *input);
-
-
+void handle_sig(int sig);
+void printCommand();
  /*setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. 
    setup() sets the args parameter as a null-terminated string 
 
@@ -68,7 +69,7 @@ for ( i = 0; i < length; i++) {
 			break;
 
 		default:
-			if (start == -1)
+			if (start == -1 && inputBuffer[i]!='&')
 				start = i;
 			if (inputBuffer[i] == '&') {
 				*background = 1;
@@ -76,7 +77,7 @@ for ( i = 0; i < length; i++) {
 			}
 
 
-
+//waitpid(child_status, &status,wnohang)  
 		}
 	}
 	args[ct] = NULL; //just in case the input line was > 80 
@@ -113,28 +114,32 @@ int main (void)
 
 			i = execvp(args[0], args);
 			printf ("%d\n", i);
+			if ( i == -1) {
+				printf("%s\n", inputBuffer);
+			}
 			//printf("%s\n", inputBuffer);
 
 
 			
 		}
 		else {
-			//waitpid(child_status);
-			//
+			
+			
+		
 			if (background == 0) {
-				if (strcmp(args[0], "exit")==0){
-					kill(child_status, SIGKILL);
-					exit(3);
-				}
+				
 				pid_t w = waitpid(child_status, &status, 0);
+			
 				if ( w == -1) {
 					perror("waitpid error"); 
 					exit(EXIT_FAILURE);
 				}
 				//printf("%d\n", i);
-				if (i != 0) {
-					
+				if (strcmp(args[0], "exit")==0){
+					kill(0, SIGKILL);
+					exit(1);
 				}
+				
 			}
 			
 			
@@ -148,20 +153,50 @@ void addCommands(int counter, int number, char *input) {
 
 	if (counter < 10) {
 				numComm[counter] = number;
+				comStatus[counter] = 1; //assume the command is good  
 				strcpy(history[counter], input);
 			}
 			else {
 				int i; 
 				for (i = 0; i < 9; i++) {
 					*(numComm + i) = *(numComm+i+1);
+					*(comStatus + i) = *(comStatus + i + 1);
 					strcpy(history[i], history[i+1]);
 				}
 				numComm[9] = number;
+				comStatus[9] = 1; 
 				strcpy(history[9], input);
 			}
 
+}
+void printCommand() {
+
+	int i;
+	for (i = 0; i< 10; i++) {
+		printf("%d ", numComm[i]);
+		printf("%s", history[i]);
+	}
+	printf("\n");
 
 }
 
+
+void killzombies();
+ // global
+int child_status = 0;
+void handle_sig(int sig) {
+    killzombies();
+    exit(sig);
+}
+
+// your atexit()
+void killzombies() {
+    kill(0, SIGKILL);
+    while (child_status > 0) {
+        if (wait(NULL) != -1) {
+            child_status--;
+        }
+    }
+}
 
 
