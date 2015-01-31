@@ -9,7 +9,7 @@
 
 char history[10][80]; //store the 10 previous commands 
 int numComm[10]; //store the command number 
-int comStatus[10]; //store 1 if the command is good else 0
+int comStatus[10]; //store 1 if the command is good else -1
 
 int counter; // index of the array
 int number;   // command number 
@@ -23,7 +23,7 @@ void printCommand();
 */
 
 
-void setup(char inputBuffer[], char *args[], int *background) 
+int setup(char inputBuffer[], char *args[], int *background, int counter, int number) 
 {
 	int length, // # of characters in the command line 
 	i, 	// loop inde for accessing inputBuffer array 
@@ -34,56 +34,81 @@ void setup(char inputBuffer[], char *args[], int *background)
 
 // read what the user enters on the command line 
 
-length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
+	length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
 
-start = -1; 
-if (length == 0) 
-	exit(0);
-
-if (length < 0) {
-	perror ("error reading the command"); 
-	exit(-1);
-}
-
-// examine every character in the input Buffer 
-
-for ( i = 0; i < length; i++) {
-	switch (inputBuffer[i]) {
-		case ' ':
-		case '\t' :		// argument separators 
-		   if (start != -1) {
-			args[ct] = &inputBuffer[start]; //set up pointer 
-			ct++; 
-		   }
-		   inputBuffer[i] = '\0'; //add a null char; make a C string
-		   start = -1; 
-		   break;
-
-		case '\n':
-			if (start != -1) {
-				args[ct] = &inputBuffer[start];
-				ct++;
-			}
-			inputBuffer[i] = '\0';
-			args[ct] = NULL; //no more argument to this command
+//printf("%s\n", inputBuffer);
+	int tempStatus;
+	int index; 
+	for (index = 0; index < 10; index++){
+		if (strcmp(history[index], inputBuffer) == 0) {
+			tempStatus = comStatus[index];
 			break;
-
-		default:
-			if (start == -1 && inputBuffer[i]!='&')
-				start = i;
-			if (inputBuffer[i] == '&') {
-				*background = 1;
-				inputBuffer[i] = '\0';
-			}
-
-
-//waitpid(child_status, &status,wnohang)  
 		}
 	}
+
+	if (tempStatus != -1) {
+		addCommands(counter, number, inputBuffer);
+	}
+	else {
+		printf("Invalid command not recorded!\n");		
+	}
+
+
+
+
+	start = -1; 
+	if (length == 0) 
+		exit(0);
+
+	if (length < 0) {
+		perror ("error reading the command"); 
+		exit(-1);
+	}
+
+	// examine every character in the input Buffer 
+
+	for ( i = 0; i < length; i++) {
+		switch (inputBuffer[i]) {
+			case ' ':
+			case '\t' :		// argument separators 
+			   if (start != -1) {
+				args[ct] = &inputBuffer[start]; //set up pointer 
+				ct++; 
+			   }
+			   inputBuffer[i] = '\0'; //add a null char; make a C string
+			   start = -1; 
+			   break;
+
+			case '\n':
+				if (start != -1) {
+					args[ct] = &inputBuffer[start];
+					ct++;
+				}
+				inputBuffer[i] = '\0';
+				args[ct] = NULL; //no more argument to this command
+				break;
+
+			default:
+				if (start == -1 && inputBuffer[i]!='&')
+					start = i;
+				if (inputBuffer[i] == '&') {
+					*background = 1;
+					inputBuffer[i] = '\0';
+				}
+
+
+
+
+		}	
+	}
+
+
 	args[ct] = NULL; //just in case the input line was > 80 
+
+	return tempStatus;
 }
 
-
+//waitpid(child_status, &status,wnohang)  
 
 int main (void) 
 {
@@ -94,39 +119,66 @@ int main (void)
 	char *args[MAX_LINE/+1]; //command line (of 80) has max of 40 arguments 
 	
 
+	
 	counter = 0;  //initialize the counter 
 	number = 1; // first command is numbered 1 
-	
-
+	char array[80];
 	while (1) {   //program terminates normally inside setup
 		background = 0; 
 		printf (" COMMAND -> \n");
-
-		setup(inputBuffer, args, &background); // get next command 
-
+		
+		int tempStatus;
+		tempStatus = setup(inputBuffer, args, &background, counter, number);
+		if ( tempStatus != -1){
+			counter++;
+			number++;
+		}
+		//else {
+			
+		//}
+		
+		
+ // get next command 
+		//addCommands(counter, number, inputBuffer);
 
 		int child_status = fork(); 
 		int status;
 		int i;
 
 		if (child_status == 0) {
-
-
+	
 			i = execvp(args[0], args);
-			printf ("%d\n", i);
+			
+			//printf ("%d\n", i);
 			if ( i == -1) {
-				printf("%s\n", inputBuffer);
+				if (strcmp("history", args[0])==0 || strcmp("pwd", args[0])==0 ||
+					strcmp("jobs", args[0])==0 || strcmp("fg", args[0])==0 || strcmp("cd", args[0])==0){
+					comStatus[counter-1] = 1;
+					continue;
+				}
+				else {
+					comStatus[counter-1] = -1;
+				}	
 			}
-			//printf("%s\n", inputBuffer);
 
 
 			
 		}
 		else {
 			
-			
+			if (strcmp(args[0], "exit")==0){
+					kill(0, SIGKILL);
+					exit(1);
+			}
+			if (strcmp(args[0], "history") == 0) {
+				printCommand();
+				//printf("%s\n", history[2]);
+			}
 		
+
 			if (background == 0) {
+
+				
 				
 				pid_t w = waitpid(child_status, &status, 0);
 			
@@ -135,10 +187,6 @@ int main (void)
 					exit(EXIT_FAILURE);
 				}
 				//printf("%d\n", i);
-				if (strcmp(args[0], "exit")==0){
-					kill(0, SIGKILL);
-					exit(1);
-				}
 				
 			}
 			
@@ -150,6 +198,7 @@ int main (void)
 }
 
 void addCommands(int counter, int number, char *input) {
+
 
 	if (counter < 10) {
 				numComm[counter] = number;
@@ -174,29 +223,12 @@ void printCommand() {
 	int i;
 	for (i = 0; i< 10; i++) {
 		printf("%d ", numComm[i]);
-		printf("%s", history[i]);
+		printf("%s\n", history[i]);
 	}
+
 	printf("\n");
 
 }
 
-
-void killzombies();
- // global
-int child_status = 0;
-void handle_sig(int sig) {
-    killzombies();
-    exit(sig);
-}
-
-// your atexit()
-void killzombies() {
-    kill(0, SIGKILL);
-    while (child_status > 0) {
-        if (wait(NULL) != -1) {
-            child_status--;
-        }
-    }
-}
 
 
