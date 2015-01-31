@@ -169,9 +169,4 @@ void printCommand() {
 	}
 	printf("\n");
 
-
-
-
-
-
 }

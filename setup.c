@@ -14,7 +14,7 @@ int comStatus[10]; //store 1 if the command is good else -1
 int counter; // index of the array
 int number;   // command number 
 
-void addCommands(int counter, int number, char *input);
+void addCommands(int counter, int number, char *input, int length);
 void handle_sig(int sig);
 void printCommand();
  /*setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. 
@@ -37,9 +37,31 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 	length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
 
 //printf("%s\n", inputBuffer);
+	char *temp;
+	if ((inputBuffer[0]== 'r') && (inputBuffer[2] != '\0')) {
+		printf("entered here!!!\n");
+		int i; 
+		// scan the array in reverse the to 
+		//look for the most recent command starting with 'x'
+		for (i = 9; i >=0; i--) {
+			if (inputBuffer[2] == history[i][0]) {
+				memmove(inputBuffer, history[i], strlen(history[i]));
+				//printf("%s\n", inputBuffer);
+				printf("%d ", numComm[i]); 
+				printf("%s\n", history[i]);
+				
+				break; //get out of the loop 
+			}
+
+		}
+
+	}
+
+
+
 	int tempStatus;
-	int index; 
-	for (index = 0; index < 10; index++){
+	int index;
+	for (index = 9; index >=0; index--){
 		if (strcmp(history[index], inputBuffer) == 0) {
 			tempStatus = comStatus[index];
 			break;
@@ -47,11 +69,15 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 	}
 
 	if (tempStatus != -1) {
-		addCommands(counter, number, inputBuffer);
+		addCommands(counter, number, inputBuffer, length);
+	
 	}
+
 	else {
-		printf("Invalid command not recorded!\n");		
+		printf("Invalid command not recorded!\n");
+	
 	}
+
 
 
 
@@ -101,9 +127,10 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 
 		}	
 	}
-
+	//printf("%s\n", args[1]);
 
 	args[ct] = NULL; //just in case the input line was > 80 
+	
 
 	return tempStatus;
 }
@@ -127,6 +154,7 @@ int main (void)
 		background = 0; 
 		printf (" COMMAND -> \n");
 		
+
 		int tempStatus;
 		tempStatus = setup(inputBuffer, args, &background, counter, number);
 		if ( tempStatus != -1){
@@ -146,9 +174,11 @@ int main (void)
 		int i;
 
 		if (child_status == 0) {
-	
+			
+			
 			i = execvp(args[0], args);
 			
+				
 			//printf ("%d\n", i);
 			if ( i == -1) {
 				if (strcmp("history", args[0])==0 || strcmp("pwd", args[0])==0 ||
@@ -197,13 +227,14 @@ int main (void)
 
 }
 
-void addCommands(int counter, int number, char *input) {
+void addCommands(int counter, int number, char *input, int length) {
 
 
 	if (counter < 10) {
 				numComm[counter] = number;
 				comStatus[counter] = 1; //assume the command is good  
 				strcpy(history[counter], input);
+				history[counter][length] = '\0';
 			}
 			else {
 				int i; 
@@ -215,6 +246,7 @@ void addCommands(int counter, int number, char *input) {
 				numComm[9] = number;
 				comStatus[9] = 1; 
 				strcpy(history[9], input);
+				history[counter][length] = '\0';
 			}
 
 }
@@ -223,10 +255,10 @@ void printCommand() {
 	int i;
 	for (i = 0; i< 10; i++) {
 		printf("%d ", numComm[i]);
-		printf("%s\n", history[i]);
+		printf("%s", history[i]);
 	}
 
-	printf("\n");
+	//printf("\n");
 
 }
 
