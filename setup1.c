@@ -14,7 +14,7 @@ int comStatus[10]; //store 1 if the command is good else -1
 int counter; // index of the array
 int number;   // command number 
 
-void addCommands(int counter, int number, char *input, int length);
+void addCommands(int counter, int number, char *input);
 void handle_sig(int sig);
 void printCommand();
  /*setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. 
@@ -36,54 +36,22 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 
 	length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
 
-	//inputBuffer[length-1] = '\0';
-	//printf ("%d\n",inputBuffer[length-1] == '\n');
 //printf("%s\n", inputBuffer);
-	char *temp;
-	if ((inputBuffer[0]== 'r') && (inputBuffer[2] != '\0')) {
-		printf("entered here!!!\n");
-		int i; 
-		// scan the array in reverse the to 
-		//look for the most recent command starting with 'x'
-		for (i = 9; i >=0; i--) {
-			if (inputBuffer[2] == history[i][0]) {
-				//memmove(inputBuffer, history[i], strlen(history[i]));
-				strcpy(inputBuffer, history[i]);
-				//inputBuffer[strlen(history[i])] = '\0';
-				//printf("%s\n", inputBuffer);
-				printf("%d ", numComm[i]); 
-				printf("%s\n", inputBuffer);
-				
-				break; //get out of the loop 
-			}
-
-		}
-
-	}
-
-
-
 	int tempStatus;
-	int index;
-	//inputBuffer[length-1] = '\0';
-	for (index = 9; index >=0; index--){
-		if (history[index][0] == inputBuffer[0] && history[index][1] == inputBuffer[1]) {
-			//printf("Error message\n");
+	int index; 
+	for (index = 0; index < 10; index++){
+		if (strcmp(history[index], inputBuffer) == 0) {
 			tempStatus = comStatus[index];
 			break;
 		}
 	}
 
 	if (tempStatus != -1) {
-		addCommands(counter, number, inputBuffer, length);
-	
+		addCommands(counter, number, inputBuffer);
 	}
-
 	else {
-		printf("Invalid command not recorded!\n");
-	
+		printf("Invalid command not recorded!\n");		
 	}
-
 
 
 
@@ -133,10 +101,9 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 
 		}	
 	}
-	//printf("%s\n", args[1]);
+
 
 	args[ct] = NULL; //just in case the input line was > 80 
-	
 
 	return tempStatus;
 }
@@ -160,35 +127,8 @@ int main (void)
 		background = 0; 
 		printf (" COMMAND -> \n");
 		
-		char tempString[80];
-
 		int tempStatus;
 		tempStatus = setup(inputBuffer, args, &background, counter, number);
-		
-		strcpy(tempString, inputBuffer);
-
-
-		//printf ("%s\n", tempString);
-		//printf ("%s\n", args[1]);
-		//strcat (tempString, " ");
-		//strcat(tempString, args[1]);
-		//tempString[strlen(inputBuffer)+strlen(" ")+strlen(args[1])] = '\0';
-		//tempString[2] = '\0';
-		//printf("%d\n", inputBuffer[2]=='\0');
-		int j = 1; 
-		int n = strlen(inputBuffer);
-		while (args[j] != NULL) {
-			strcat(tempString, " ");
-			n = n + strlen(" ");
-			strcat(tempString, args[j]);
-			n = n + strlen (args[j]);
-			j++;
-		}
-		tempString[n] = '\0';
-		printf("%s\n", tempString);
-
-
-
 		if ( tempStatus != -1){
 			counter++;
 			number++;
@@ -206,11 +146,9 @@ int main (void)
 		int i;
 
 		if (child_status == 0) {
-			
-			
+	
 			i = execvp(args[0], args);
 			
-				
 			//printf ("%d\n", i);
 			if ( i == -1) {
 				if (strcmp("history", args[0])==0 || strcmp("pwd", args[0])==0 ||
@@ -219,9 +157,7 @@ int main (void)
 					continue;
 				}
 				else {
-					printf("invalid command status\n");
 					comStatus[counter-1] = -1;
-					printf("%d\n", comStatus[counter-1]);
 				}	
 			}
 
@@ -261,14 +197,13 @@ int main (void)
 
 }
 
-void addCommands(int counter, int number, char *input, int length) {
+void addCommands(int counter, int number, char *input) {
 
-//	input[length-1] = '\0';
+
 	if (counter < 10) {
 				numComm[counter] = number;
 				comStatus[counter] = 1; //assume the command is good  
 				strcpy(history[counter], input);
-				//history[counter][length-1] = '\0';
 			}
 			else {
 				int i; 
@@ -276,12 +211,10 @@ void addCommands(int counter, int number, char *input, int length) {
 					*(numComm + i) = *(numComm+i+1);
 					*(comStatus + i) = *(comStatus + i + 1);
 					strcpy(history[i], history[i+1]);
-					//history[i][strlen(history[i])-1] = '\0';
 				}
 				numComm[9] = number;
 				comStatus[9] = 1; 
 				strcpy(history[9], input);
-				//history[counter][length-1] = '\0';
 			}
 
 }
