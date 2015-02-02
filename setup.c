@@ -63,7 +63,8 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 		length = strlen(inputBuffer);
 
 	}
-	else if (strcmp(inputBuffer, "r\n")==0) {
+	if (inputBuffer[0] == 'r' && inputBuffer[1] == '\n') {
+		//printf("Enter here\n");
 		strcpy(inputBuffer, history[counter-1]);
 		printf("%d ", numComm[counter-1]); 
 		printf("%s\n", inputBuffer);
@@ -174,7 +175,7 @@ int main (void)
 		int tempStatus;
 		tempStatus = setup(inputBuffer, args, &background, counter, number);
 		
-		
+	/*	
 		char tempString[80];
 		strcpy(tempString, inputBuffer);
 		int j = 1; 
@@ -188,7 +189,7 @@ int main (void)
 		}
 		tempString[n] = '\0';
 		//printf("%s\n", tempString);
-
+*/
 
 
 		if ( tempStatus != -1){
@@ -210,6 +211,7 @@ int main (void)
 				}
 			}
 		if (strcmp(args[0], "cd") == 0) {
+			getcwd(directory, MAX_LINE);
 			if (chdir(args[1]) == 0) {
 				getcwd(directory, MAX_LINE);
 				printf("Changed to : %s\n", directory);
@@ -224,7 +226,7 @@ int main (void)
 
 		if (child_status == 0) {
 			
-			if (strcmp ("pwd", inputBuffer) !=0 && strcmp("history", inputBuffer) != 0 && strcmp("cd", inputBuffer) != 0) {
+			if (strcmp ("pwd", args[0]) !=0 && strcmp("history", args[0]) != 0 && strcmp("cd", args[0]) != 0) {
 				execStatus = execvp(args[0], args);
 				//printf ("%d\n", execStatus);
 				//printf("function in child %d\n", strcmp ("pwd", inputBuffer));
@@ -262,7 +264,6 @@ int main (void)
 
 			if (background == 0) {
 
-				
 				
 				pid_t w = waitpid(child_status, &status, 0);
 			
