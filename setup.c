@@ -262,8 +262,9 @@ int main (void)
 				//printf("%s\n", history[2]);
 			}
 
-			if ( strcmp(args[0], "history") == 0) {
-				
+			if ( strcmp(args[0], "jobs") == 0) {
+
+
 			}
 
 
