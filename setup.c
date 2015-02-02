@@ -218,6 +218,7 @@ int main (void)
 			}
 			else printf("Invalid path\n");
 		}
+		
 
 
 		int child_status = fork(); 
@@ -252,12 +253,17 @@ int main (void)
 		else {
 			
 			if (strcmp(args[0], "exit")==0){
-					kill(0, SIGKILL);
-					exit(1);
+				kill(0, SIGKILL);
+				exit(1);
 			}
+			
 			if (strcmp(args[0], "history") == 0) {
 				printCommand();
 				//printf("%s\n", history[2]);
+			}
+
+			if ( strcmp(args[0], "history") == 0) {
+				
 			}
 
 
