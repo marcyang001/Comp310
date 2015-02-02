@@ -179,7 +179,10 @@ int main (void)
 		int tempStatus;
 		tempStatus = setup(inputBuffer, args, &background, counter, number);
 		
-
+		if ( tempStatus != -1){
+			counter++;
+			number++;
+		}
 
 
 
@@ -201,10 +204,7 @@ int main (void)
 */
 
 
-		if ( tempStatus != -1){
-			counter++;
-			number++;
-		}
+		
 		//else {
 			
 		//}
@@ -225,6 +225,16 @@ int main (void)
 				getcwd(directory, MAX_LINE);
 				printf("Changed to : %s\n", directory);
 			}
+			else if (args[1] == NULL || strcmp(args[1], "~") == 0 || strcmp(args[1], "~/") == 0  ) {
+				//printf("Here");
+				if(chdir(getenv("HOME")) == 0) {
+				//printf("%s\n", getenv("HOME"));
+					getcwd(directory, MAX_LINE);
+			
+					printf("Changed to : %s\n", directory);
+				}
+			}
+
 			else printf("Invalid path\n");
 		}
 		
@@ -240,22 +250,11 @@ int main (void)
 		strcmp("jobs", args[0]) != 0 && strcmp("fg", args[0]) != 0 && strcmp("exit", args[0]) != 0) {
 		child_status = fork(); 
 		if (child_status != 0) 
-			addChildStatus(child_status, counter); 
-	}
-	else {
-		addChildStatus(-1, counter);
-	}
+			addChildStatus(child_status, counter-1); 
+	//else {
+	//	addChildStatus(-1, counter-1);
+	//}
 	
-	
-
-		//
-		
-
-
-
-
-
-
 
 		if (child_status == 0) {
 			/*child process*/
@@ -278,10 +277,23 @@ int main (void)
 					//printf("%d\n", comStatus[counter-1]);
 				}	
 			}
-
-
 			
 		}
+		else {
+			if (background == 0) {
+
+				
+				pid_t w = waitpid(child_status, &status, 0);
+			
+				//if ( w == -1) {
+				//	perror("waitpid error"); 
+				//	exit(EXIT_FAILURE);
+				//}
+				//printf("%d\n", i);
+				
+			}
+		}
+	}
 		//else {
 
 
@@ -299,22 +311,33 @@ int main (void)
 			}
 
 			
-					if (strcmp(args[0], "jobs") == 0) {
+			if (strcmp(args[0], "jobs") == 0) {
 				int i;
 				int processID;
 				for (i = 0; i < 10; i++) {
-					//if (i == 0 ||childStatus[i] != 0) {
-					processID = childStatus[i];
-					//result = waitpid(1, &status, WNOHANG);
+					//printf("%d\n", i);
+					if (childStatus[i] > 0) {
+						processID = childStatus[i];
 						if (waitpid(processID, &status, WNOHANG) == 0) {
-						//printf ("Jobs running\n");
-							printf ("Pid: %d  Command: %s\n", childStatus[i], history[i]);
+						//printf("Enter here\n");
 						
+							printf ("Pid: %d  Command: %s\n", childStatus[i], history[i]);
 						}
+					}
+						
+						//processID = childStatus[i];
+				}
+				//printf("Hello World\n");
+					//result = waitpid(1, &status, WNOHANG);
+						
+						//printf ("Jobs running\n");
+							
+						
 					//}
 					
-				}
+		
 		}
+		//printf("after big if\n");
 
 			
 
@@ -324,18 +347,6 @@ int main (void)
 
 
 
-			if (background == 0) {
-
-				
-				pid_t w = waitpid(child_status, &status, 0);
-			
-				//if ( w == -1) {
-				//	perror("waitpid error"); 
-				//	exit(EXIT_FAILURE);
-				//}
-				//printf("%d\n", i);
-				
-			}
 			
 			
 		}
