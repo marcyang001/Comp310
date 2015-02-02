@@ -11,13 +11,17 @@
 char history[10][80]; //store the 10 previous commands 
 int numComm[10]; //store the command number 
 int comStatus[10]; //store 1 if the command is good else -1
-
+int backgroundStatus[10]; //tracks the background 
+int childStatus[10]; 
 int counter; // index of the array
 int number;   // command number 
 
 void addCommands(int counter, int number, char *input);
-void handle_sig(int sig);
+
 void printCommand();
+void addChildStatus(int child_status, int counter);
+void printChildID(); 
+
  /*setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. 
    setup() sets the args parameter as a null-terminated string 
 
@@ -158,7 +162,7 @@ int main (void)
 	int quantity = 30;
 	char inputBuffer[MAX_LINE]; // buffer to hold the command entered 
 	int background; // equals 1 if a command is followed by '&'
-
+	int child_status;
 	char *args[MAX_LINE/+1]; //command line (of 80) has max of 40 arguments 
 	
 
@@ -175,6 +179,11 @@ int main (void)
 		int tempStatus;
 		tempStatus = setup(inputBuffer, args, &background, counter, number);
 		
+
+
+
+
+
 	/*	
 		char tempString[80];
 		strcpy(tempString, inputBuffer);
@@ -200,9 +209,9 @@ int main (void)
 			
 		//}
 		
-		
- // get next command 
-		//addCommands(counter, number, inputBuffer);
+		int status;
+		int execStatus;
+ 		
 
 		if (strcmp(args[0], "pwd") == 0) {
 				if (getcwd(directory, MAX_LINE) != NULL){ 
@@ -219,19 +228,42 @@ int main (void)
 			else printf("Invalid path\n");
 		}
 		
+		if (strcmp(args[0], "print") == 0) {
+				printChildID();
+			}
 
 
-		int child_status = fork(); 
-		int status;
-		int execStatus;
+
+
+
+	if (strcmp ("pwd", args[0]) !=0 && strcmp("history", args[0]) != 0 && strcmp("cd", args[0]) != 0 && 
+		strcmp("jobs", args[0]) != 0 && strcmp("fg", args[0]) != 0 && strcmp("exit", args[0]) != 0) {
+		child_status = fork(); 
+		if (child_status != 0) 
+			addChildStatus(child_status, counter); 
+	}
+	else {
+		addChildStatus(-1, counter);
+	}
+	
+	
+
+		//
+		
+
+
+
+
+
+
 
 		if (child_status == 0) {
-			
-			if (strcmp ("pwd", args[0]) !=0 && strcmp("history", args[0]) != 0 && strcmp("cd", args[0]) != 0) {
+			/*child process*/
+			 
 				execStatus = execvp(args[0], args);
 				//printf ("%d\n", execStatus);
 				//printf("function in child %d\n", strcmp ("pwd", inputBuffer));
-			}
+			
 				
 			//printf ("%d\n", i);
 			if ( execStatus == -1) {
@@ -250,22 +282,45 @@ int main (void)
 
 			
 		}
-		else {
+		//else {
+
+
 			
 			if (strcmp(args[0], "exit")==0){
 				kill(0, SIGKILL);
 				exit(1);
 			}
 			
+
+			
 			if (strcmp(args[0], "history") == 0) {
 				printCommand();
 				//printf("%s\n", history[2]);
 			}
 
-			if ( strcmp(args[0], "jobs") == 0) {
+			
+					if (strcmp(args[0], "jobs") == 0) {
+				int i;
+				int processID;
+				for (i = 0; i < 10; i++) {
+					//if (i == 0 ||childStatus[i] != 0) {
+					processID = childStatus[i];
+					//result = waitpid(1, &status, WNOHANG);
+						if (waitpid(processID, &status, WNOHANG) == 0) {
+						//printf ("Jobs running\n");
+							printf ("Pid: %d  Command: %s\n", childStatus[i], history[i]);
+						
+						}
+					//}
+					
+				}
+		}
+
+			
+
+					
 
 
-			}
 
 
 
@@ -274,10 +329,10 @@ int main (void)
 				
 				pid_t w = waitpid(child_status, &status, 0);
 			
-				if ( w == -1) {
-					perror("waitpid error"); 
-					exit(EXIT_FAILURE);
-				}
+				//if ( w == -1) {
+				//	perror("waitpid error"); 
+				//	exit(EXIT_FAILURE);
+				//}
 				//printf("%d\n", i);
 				
 			}
@@ -285,7 +340,7 @@ int main (void)
 			
 		}
 
-	}
+	//}
 
 }
 
@@ -316,6 +371,20 @@ void addCommands(int counter, int number, char *input) {
 			}
 
 }
+
+void addChildStatus(int child_status, int counter) {
+	if (counter < 10) {
+				childStatus[counter] = child_status;
+			}
+			else {
+				int i; 
+				for (i = 0; i < 9; i++) {
+					*(childStatus + i) = *(childStatus+i+1);
+				}
+				childStatus[9] = child_status;
+			}
+}
+
 void printCommand() {
 
 	int i;
@@ -326,6 +395,14 @@ void printCommand() {
 
 	//printf("\n");
 
+}
+
+void printChildID() {
+	int i;
+	for (i = 0; i< 10; i++) {
+		printf("%d ", childStatus[i]);
+	
+	}
 }
 
 
