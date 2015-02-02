@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <errno.h>
 
 #define MAX_LINE 80
 
@@ -23,7 +24,7 @@ void printCommand();
 */
 
 
-void setup(char inputBuffer[], char *args[], int *background) 
+void setup(char inputBuffer[], char *args[], int *background, int *rlc) 
 {
 	int length, // # of characters in the command line 
 	i, 	// loop inde for accessing inputBuffer array 
@@ -35,6 +36,32 @@ void setup(char inputBuffer[], char *args[], int *background)
 // read what the user enters on the command line 
 
 length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
+
+char *tempBuffer;
+strcpy(tempBuffer, inputBuffer);
+if (tempBuffer[0] == 'r' && tempBuffer[2] != '\0') {
+	//*rlc = 1; 
+	int i; 
+	char *str;
+		// scan the array in reverse the to 
+		//look for the most recent command starting with 'x'
+	for (i = 9; i >=0; i--) {
+		if (tempBuffer[2] == history[i][0]) {
+			strcpy(inputBuffer, history[i]);
+			printf("%d ", numComm[i]); 
+			printf("%s\n", history[i]);	
+			break; //get out of the loop 
+		}
+
+	}
+	inputBuffer[strlen(history[i])] = '\0';
+	length = strlen(history[i]);
+	//strcpy(hist)
+
+}
+
+
+
 
 start = -1; 
 if (length == 0) 
@@ -73,6 +100,7 @@ for ( i = 0; i < length; i++) {
 				start = i;
 			if (inputBuffer[i] == '&') {
 				*background = 1;
+				//inputBuffer[i] = '&';
 				inputBuffer[i] = '\0';
 			}
 
@@ -81,7 +109,41 @@ for ( i = 0; i < length; i++) {
 		}
 	}
 	args[ct] = NULL; //just in case the input line was > 80 
+	
 	//printf("%s\n", args[1]);
+	// when r l\n  is entered
+/*
+if (strcmp (args[0],"r") == 0 && args[1] != NULL) {
+	//*rlc = 1; 
+	int i; 
+	char *str;
+		// scan the array in reverse the to 
+		//look for the most recent command starting with 'x'
+	for (i = 9; i >=0; i--) {
+		if (args[1][0] == history[i][0]) {
+			strcpy(str, history[i]);
+			printf("%d ", numComm[i]); 
+			printf("%s\n", history[i]);	
+			break; //get out of the loop 
+		}
+
+	}
+	printf("%s\n", str);
+	//char sep[2] = " ";
+	//char *token;
+	//int argNumber = 0; 
+	//token = strtok(str, sep);
+	//printf("%s\n", token);
+	strcpy(args, str);
+	//printf("argument = %s\n", args[0]);
+	//token = strtok(NULL, sep);
+	//token = strtok(str, sep);
+	//printf("%s\n", token);
+	//strcpy(args[1], token);
+	//args[2] = NULL;
+
+}
+*/
 }
 
 
@@ -93,7 +155,7 @@ int main (void)
 	int background; // equals 1 if a command is followed by '&'
 
 	char *args[MAX_LINE/+1]; //command line (of 80) has max of 40 arguments 
-	
+	int rlc = 0; // notify is r 'x' command is entered 
 
 	counter = 0;  //initialize the counter 
 	number = 1; // first command is numbered 1 
@@ -104,11 +166,11 @@ int main (void)
 		printf (" COMMAND -> \n");
 
 		
-		setup(inputBuffer, args, &background); // get next command 
+		setup(inputBuffer, args, &background, &rlc); // get next command 
 
-		//printf("%s\n", args[1]);
+		printf("%s\n", args[0]);
 
-
+		/*String MANIUPULATION  */
 		char tempString[80];
 		strcpy(tempString, inputBuffer);
 		int j = 1; 
@@ -122,28 +184,32 @@ int main (void)
 		}
 		tempString[n] = '\0';
 		//printf("%s\n", tempString);
+		/*String MANIUPULATION ENDS */
 
+	
 		addCommands(counter, number, tempString);
 		counter++;
 		number++;
 
 		int child_status = fork(); 
 		int status;
-		int i;
+		int execStatus;
 
 		if (child_status == 0) {
-
-
-			i = execvp(args[0], args);
-			printf ("%d\n", i);
+			
+			if (strcmp ("pwd", inputBuffer) !=0 && strcmp("history", inputBuffer) != 0 && strcmp("cd", inputBuffer) != 0) {
+				execStatus = execvp(args[0], args);
+				printf ("%d\n", execStatus);
+				//printf("function in child %d\n", strcmp ("pwd", inputBuffer));
+			}
 			//printf("%s\n", inputBuffer);
 
 
 			
 		}
-		else {
+		else { 	// parent process 
 			//waitpid(child_status);
-			//
+
 			if (strcmp(args[0], "exit")==0){
 					kill(0, SIGKILL);
 					exit(1);
@@ -152,6 +218,33 @@ int main (void)
 			if (strcmp(args[0], "history") == 0) {
 				printCommand();
 				//printf("%s\n", history[2]);
+			}
+			//if (strcmp(args[0], "cd") == 0) {
+			//	char directory[200];
+			//	int ret;
+			//	printf("enter a directory\n");
+			//	fgets(directory, 199, stdin);	
+			//	if (directory != NULL) {
+			//		ret = chdir(directory);
+			//	}
+			//	else {
+			//		continue;
+			//	}	
+					
+			//}
+
+
+			if (strcmp(args[0], "pwd") == 0) {
+				char *cwd = getcwd(args[0], MAX_LINE);
+
+				if (cwd != NULL) {
+					printf ("%s\n", cwd);
+				}
+				else {
+					printf("Issues with pwd : %s\n", strerror(errno));
+				}
+					
+					
 			}
 
 
@@ -163,9 +256,6 @@ int main (void)
 					exit(EXIT_FAILURE);
 				}
 				//printf("%d\n", i);
-				if (i != 0) {
-					
-				}
 			}
 			
 			

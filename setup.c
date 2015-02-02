@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <errno.h>
 
 #define MAX_LINE 80
 
@@ -14,7 +15,7 @@ int comStatus[10]; //store 1 if the command is good else -1
 int counter; // index of the array
 int number;   // command number 
 
-void addCommands(int counter, int number, char *input, int length);
+void addCommands(int counter, int number, char *input);
 void handle_sig(int sig);
 void printCommand();
  /*setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. 
@@ -36,12 +37,13 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 
 	length = read(STDIN_FILENO, inputBuffer, MAX_LINE);
 
+	//printf("%d\n", length);
 	//inputBuffer[length-1] = '\0';
 	//printf ("%d\n",inputBuffer[length-1] == '\n');
 //printf("%s\n", inputBuffer);
 	char *temp;
 	if ((inputBuffer[0]== 'r') && (inputBuffer[2] != '\0')) {
-		printf("entered here!!!\n");
+		//printf("entered here!!!\n");
 		int i; 
 		// scan the array in reverse the to 
 		//look for the most recent command starting with 'x'
@@ -58,8 +60,16 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 			}
 
 		}
+		length = strlen(inputBuffer);
 
 	}
+	else if (strcmp(inputBuffer, "r\n")==0) {
+		strcpy(inputBuffer, history[counter-1]);
+		printf("%d ", numComm[counter-1]); 
+		printf("%s\n", inputBuffer);
+		length = strlen(inputBuffer);
+	}
+
 
 
 
@@ -75,7 +85,8 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 	}
 
 	if (tempStatus != -1) {
-		addCommands(counter, number, inputBuffer, length);
+		inputBuffer[length] = '\0'; //string manipulation 
+		addCommands(counter, number, inputBuffer);
 	
 	}
 
@@ -83,9 +94,6 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 		printf("Invalid command not recorded!\n");
 	
 	}
-
-
-
 
 
 	start = -1; 
@@ -142,6 +150,7 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 }
 
 //waitpid(child_status, &status,wnohang)  
+char directory[MAX_LINE];
 
 int main (void) 
 {
@@ -160,21 +169,14 @@ int main (void)
 		background = 0; 
 		printf (" COMMAND -> \n");
 		
-		char tempString[80];
+		
 
 		int tempStatus;
 		tempStatus = setup(inputBuffer, args, &background, counter, number);
 		
+		
+		char tempString[80];
 		strcpy(tempString, inputBuffer);
-
-
-		//printf ("%s\n", tempString);
-		//printf ("%s\n", args[1]);
-		//strcat (tempString, " ");
-		//strcat(tempString, args[1]);
-		//tempString[strlen(inputBuffer)+strlen(" ")+strlen(args[1])] = '\0';
-		//tempString[2] = '\0';
-		//printf("%d\n", inputBuffer[2]=='\0');
 		int j = 1; 
 		int n = strlen(inputBuffer);
 		while (args[j] != NULL) {
@@ -185,7 +187,7 @@ int main (void)
 			j++;
 		}
 		tempString[n] = '\0';
-		printf("%s\n", tempString);
+		//printf("%s\n", tempString);
 
 
 
@@ -201,18 +203,35 @@ int main (void)
  // get next command 
 		//addCommands(counter, number, inputBuffer);
 
+		if (strcmp(args[0], "pwd") == 0) {
+				if (getcwd(directory, MAX_LINE) != NULL){ 
+
+					printf ("Currently in: %s\n", directory);
+				}
+			}
+		if (strcmp(args[0], "cd") == 0) {
+			if (chdir(args[1]) == 0) {
+				getcwd(directory, MAX_LINE);
+				printf("Changed to : %s\n", directory);
+			}
+			else printf("Invalid path\n");
+		}
+
+
 		int child_status = fork(); 
 		int status;
-		int i;
+		int execStatus;
 
 		if (child_status == 0) {
 			
-			
-			i = execvp(args[0], args);
-			
+			if (strcmp ("pwd", inputBuffer) !=0 && strcmp("history", inputBuffer) != 0 && strcmp("cd", inputBuffer) != 0) {
+				execStatus = execvp(args[0], args);
+				//printf ("%d\n", execStatus);
+				//printf("function in child %d\n", strcmp ("pwd", inputBuffer));
+			}
 				
 			//printf ("%d\n", i);
-			if ( i == -1) {
+			if ( execStatus == -1) {
 				if (strcmp("history", args[0])==0 || strcmp("pwd", args[0])==0 ||
 					strcmp("jobs", args[0])==0 || strcmp("fg", args[0])==0 || strcmp("cd", args[0])==0){
 					comStatus[counter-1] = 1;
@@ -221,7 +240,7 @@ int main (void)
 				else {
 					printf("invalid command status\n");
 					comStatus[counter-1] = -1;
-					printf("%d\n", comStatus[counter-1]);
+					//printf("%d\n", comStatus[counter-1]);
 				}	
 			}
 
@@ -238,7 +257,8 @@ int main (void)
 				printCommand();
 				//printf("%s\n", history[2]);
 			}
-		
+
+
 
 			if (background == 0) {
 
@@ -261,9 +281,12 @@ int main (void)
 
 }
 
-void addCommands(int counter, int number, char *input, int length) {
+void addCommands(int counter, int number, char *input) {
 
-//	input[length-1] = '\0';
+	//char str[80];
+
+	//strcpy(str, input);
+
 	if (counter < 10) {
 				numComm[counter] = number;
 				comStatus[counter] = 1; //assume the command is good  
@@ -293,7 +316,7 @@ void printCommand() {
 		printf("%s\n", history[i]);
 	}
 
-	printf("\n");
+	//printf("\n");
 
 }
 
