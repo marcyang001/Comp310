@@ -345,6 +345,7 @@ int main (void)
 			if (strcmp(args[0], "fg") == 0) {
 				int i;
 				char *temp;
+				pid_t w; 
 				if (args[1] != NULL) {
 					int processID = atoi(args[1]);
 					for (i = 0; i < 10; i++) {
@@ -352,15 +353,18 @@ int main (void)
 							printf("Foreground --> %d : %s\n", processID, childCommand[i]);
 							waitpid(processID, &status, 0);
 							break;
-
+							
+						}
+						else  {
+							printf("No current jobs\n");
+							break;
 						}
 					}
 
 					
 				}
-				
 				else 
-					printf("No process ID entered");	
+					printf("No process ID entered\n");	
 						
 						//processID = childStatus[i];
 				
@@ -443,6 +447,7 @@ void printChildID() {
 	int i;
 	for (i = 0; i< 10; i++) {
 		printf("%d ", childPid[i]);
+		printf("%s\n", childCommand[i]);
 	
 	}
 }
