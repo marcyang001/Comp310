@@ -21,7 +21,7 @@ void addCommands(int counter, int number, char *input);
 
 void printCommand();
 
-void printChildID(); 
+//void printChildID(); 
 void addChildStatus(int child_status, char *commands, int counter);
 
  /*setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. 
@@ -243,11 +243,12 @@ int main (void)
 			else printf("Invalid path\n");
 		}
 		
+		/*
 		if (strcmp(args[0], "print") == 0) {
 				printChildID();
 			}
 
-
+		*/
 
 
 			//start making the child 
@@ -443,6 +444,7 @@ void printCommand() {
 
 }
 
+/*
 void printChildID() {
 	int i;
 	for (i = 0; i< 10; i++) {
@@ -452,5 +454,5 @@ void printChildID() {
 	}
 }
 
-
+*/
 
