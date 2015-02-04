@@ -11,8 +11,9 @@
 char history[10][80]; //store the 10 previous commands 
 int numComm[10]; //store the command number 
 int comStatus[10]; //store 1 if the command is good else -1
-int childPid[10]; //stores the pid of the child 
-char childCommand[10][80]; //store the child commands 
+int childPid[20]; //stores the pid of the child 
+char childCommand[20][80]; //store the child commands 
+char tempCommand[80];
 int counter; // index of the array history
 int number;   // command number 
 int pointer; // index for the childstatus array and childCommand array
@@ -21,8 +22,8 @@ void addCommands(int counter, int number, char *input);
 
 void printCommand();
 
-//void printChildID(); 
-void addChildStatus(int child_status, char *commands, int counter);
+void printChildID(); 
+void addChildStatus(int child_status, char *commands, int pointer);
 
  /*setup() reads in the next command line, separating it into distinct tokens using whitespace as delimiters. 
    setup() sets the args parameter as a null-terminated string 
@@ -93,6 +94,7 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 
 	if (tempStatus != -1) {
 		inputBuffer[length] = '\0'; //string manipulation 
+		strcpy(tempCommand, inputBuffer);
 		addCommands(counter, number, inputBuffer);
 	
 	}
@@ -113,7 +115,7 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 	}
 
 	// examine every character in the input Buffer 
-
+	int sign;
 	for ( i = 0; i < length; i++) {
 		switch (inputBuffer[i]) {
 			case ' ':
@@ -141,6 +143,7 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 				if (inputBuffer[i] == '&') {
 					*background = 1;
 					inputBuffer[i] = '\0';
+					sign = 1;
 				}
 
 
@@ -152,7 +155,7 @@ int setup(char inputBuffer[], char *args[], int *background, int counter, int nu
 
 	args[ct] = NULL; //just in case the input line was > 80 
 	
-
+	
 	return tempStatus;
 }
 
@@ -173,14 +176,14 @@ int main (void)
 	number = 1; // first command is numbered 1 
 	pointer = 0;
 
-	char array[80];
+	int tempStatus;
 	while (1) {   //program terminates normally inside setup
 		background = 0; 
-		printf (" COMMAND -> \n");
+		printf ("COMMAND -> \n");
 		
 		
 
-		int tempStatus;
+		
 		tempStatus = setup(inputBuffer, args, &background, counter, number);
 		
 		// add to the comStatus[], numStatus[] and history[][]
@@ -243,26 +246,33 @@ int main (void)
 			else printf("Invalid path\n");
 		}
 		
-		/*
-		if (strcmp(args[0], "print") == 0) {
-				printChildID();
-			}
+		
+		//if (strcmp(args[0], "print") == 0) {
+		//		printChildID();
+		//	}
 
-		*/
+		
 
 
 			//start making the child 
 	if (strcmp ("pwd", args[0]) !=0 && strcmp("history", args[0]) != 0 && strcmp("cd", args[0]) != 0 && 
 		strcmp("jobs", args[0]) != 0 && strcmp("fg", args[0]) != 0 && strcmp("exit", args[0]) != 0) {
+		
 		child_status = fork(); 
-		if (child_status != 0 && tempStatus != -1) {
+		//if (background == 1 && tempStatus != -1) {
+		//	printf("1 ---- > %s", history[counter-1]);
+		//	tempStatus = -1;
+
+		//}
+
+		if (child_status != 0 && tempStatus != -1 && background == 1) {
+			//printf("Enter here \n");
+			//childPid[pointer] = child_status;
+			//history[counter-1][strlen(history[counter-1])] = '\0';
 			addChildStatus(child_status, history[counter-1], pointer);
 			pointer++;
 		}
-		else {
-			addChildStatus(0, history[counter-1], pointer); 
-			pointer++;
-		}
+	
 	//else {
 	//	addChildStatus(-1, counter-1);
 	//}
@@ -326,7 +336,7 @@ int main (void)
 			if (strcmp(args[0], "jobs") == 0) {
 				int i;
 				int processID;
-				for (i = 0; i < 10; i++) {
+				for (i = 0; i < 20; i++) {
 					//printf("%d\n", i);
 					if (childPid[i] > 0) {
 						processID = childPid[i];
@@ -345,21 +355,20 @@ int main (void)
 
 			if (strcmp(args[0], "fg") == 0) {
 				int i;
-				char *temp;
 				pid_t w; 
 				if (args[1] != NULL) {
 					int processID = atoi(args[1]);
-					for (i = 0; i < 10; i++) {
+					for (i = 0; i < 20; i++) {
 						if (processID == childPid[i]) {
 							printf("Foreground --> %d : %s\n", processID, childCommand[i]);
 							waitpid(processID, &status, 0);
 							break;
 							
 						}
-						else  {
-							printf("No current jobs\n");
-							break;
-						}
+					//	else  {
+					//		printf("No current jobs\n");
+					//		break;
+					//	}
 					}
 
 					
@@ -371,14 +380,6 @@ int main (void)
 				
 
 			}
-			
-
-					
-
-
-
-
-
 			
 			
 		}
@@ -416,19 +417,24 @@ void addCommands(int counter, int number, char *input) {
 }
 
 void addChildStatus(int child_status, char *commands, int pointer) {
-	if (counter < 10) {
+	if (pointer < 20) {
 				childPid[pointer] = child_status;
+				//commands[strlen(commands)] = '\0'; 
 				strcpy(childCommand[pointer], commands);
 
 			}
 			else {
-				int i; 
-				for (i = 0; i < 9; i++) {
-					*(childPid + i) = *(childPid+i+1);
-					strcpy(childCommand[i], childCommand[i+1]);
+				int pos = pointer % 20;
+				if (pos == 0) {
+					pos = 20;
 				}
-				childPid[9] = child_status;
-				strcpy(childCommand[9], commands);
+				childPid[pos-1] = child_status;
+				//childCommand[pos-1] = NULL;
+				//commands[strlen(commands)] = '\0';
+				memmove(childCommand[pos-1], commands, strlen(commands));
+
+				//strcpy(childCommand[pos-1], commands);
+				//childCommand[pos-1][strlen(commands)] = '\0';
 			}
 }
 
@@ -444,15 +450,15 @@ void printCommand() {
 
 }
 
-/*
+
 void printChildID() {
 	int i;
-	for (i = 0; i< 10; i++) {
+	for (i = 0; i< 20; i++) {
 		printf("%d ", childPid[i]);
 		printf("%s\n", childCommand[i]);
 	
 	}
 }
 
-*/
+
 
