@@ -62,7 +62,7 @@ void *Writer(void *arg) {
 	gettimeofday(&end, NULL);  
     double t2 = end.tv_sec * 1000000 +(end.tv_usec);  
 
-   // waitTime_writer[WriterNumber]= t2 - t1;
+  // 	r_wait.waitTime_writer[WriterNumber]= t2 - t1;
     
 
 }
@@ -90,10 +90,9 @@ void *Reader (void *arg) {
 		wait(mutex); 
 		gettimeofday(&end, NULL); 
 
-		double newTime = ((end.tv_sec * 1000000 + end.tv_usec)
-		  - (start.tv_sec * 1000000 + start.tv_usec));
+		double newTime = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
 
-		r_wait.average = (r_wait.average*(readerIteration-1)+newTime)/readerIteration;
+		r_wait.average = (r_wait.average*(readerIteration) +newTime)/(readerIteration-1);
 
 
 
@@ -117,8 +116,7 @@ void *Reader (void *arg) {
 	}
 	 
 
-	//waitTime_reader[ReaderNumber] = ((end.tv_sec * 1000000 + end.tv_usec)
-	//	  - (start.tv_sec * 1000000 + start.tv_usec));
+	
 
 }
 
@@ -193,9 +191,9 @@ int main(int argc, char *argv[]) {
 	printf("Reader threads: \n");
 
 	printf("Average time: %.1f microseconds\n", r_wait.average);
-	//for (i = 0; i<nbReader; i++) {
-	//	printf("%.1f microseconds elapsed\n", waitTime_reader[i]);
-	//}
+	for (i = 0; i<nbReader; i++) {
+		printf("%.1f microseconds elapsed\n", r_wait.waitTime_reader[i]);
+	}
 
 
 	return 0;
