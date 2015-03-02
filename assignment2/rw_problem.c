@@ -10,15 +10,18 @@ static sem_t sem;
 sem_t rw_mutex; //global variable shared with reader and writer
 sem_t mutex;  // mutual exclusion variable (how many readers)
 int read_count = 0;
-
+int readerIteration;
+int writerIteration;
 
 
 
 void * Writer(void *arg) {
 
-
-	do{
+	int i = 0;
+	while (i < writerIteration) {
+	//do{
 		
+		int randomTime = rand() % 101000;
 		int WriterNumber = (int)arg;
 		wait(rw_mutex);
 
@@ -29,19 +32,22 @@ void * Writer(void *arg) {
 		printf("Writer %d increments the value from %d to %d\n", WriterNumber,temp, glob);
 		// end of critical section
 
-		sleep(1);
+		//sleep(1);
+		usleep(101000);
 		signal(rw_mutex);
 		
-		//usleep(10000);		
+		i++;		
 	}
-	while (1);
 }
 
 void *Reader (void *arg) {
 
-	do {
+	int i = 0; 
+	while (i < readerIteration) {
+	//do {
 
-		
+		int randomTime = rand() % 101000;
+
 		int ReaderNumber = (int) arg;
 		wait(mutex); 
 		read_count++;
@@ -53,8 +59,8 @@ void *Reader (void *arg) {
 		printf("Reader %d is reading the number: %d\n", ReaderNumber,glob);
 		//end of critical section		
 
-		sleep(1);
-		//usleep(10000);
+		//sleep(1);
+		usleep(101000);
 		wait(mutex);
 		read_count--; 
 
@@ -62,8 +68,9 @@ void *Reader (void *arg) {
 			signal(rw_mutex);
 		signal(mutex);
 
+		i++;
 	}
-	while(1);
+	//while(1);
 
 
 }
@@ -71,13 +78,20 @@ void *Reader (void *arg) {
 
 
 
-int main() {
+int main(int argc, char *argv[]) {
 
-	pthread_t t_read[100], t_write[10];
+	int nbReader = 10;
+	int nbWriter = 6;
+	pthread_t t_read[nbReader], t_write[nbWriter];
 	pthread_t r1, w1;
 	int s, i, j; 
-	int nbReader = 10;
-	int nbWriter = 10;
+	
+	readerIteration = atoi(argv[1]);
+	writerIteration = atoi(argv[2]);
+
+
+	int nbIteration = 10;
+
 	//initialize semaphore rw_mutex = 1 
   	if (sem_init(&rw_mutex, 0, 1) == -1) {
     	printf("Error, init semaphore\n");
@@ -102,8 +116,8 @@ int main() {
 	// creation of 10 writer threads
 	
 	for (j = 0; j < nbWriter; j++){
-		if(j < nbWriter)
-			s = pthread_create(&t_write[i], NULL, Writer, (void *)i);
+		
+		s = pthread_create(&t_write[j], NULL, Writer, (void *)j);
 	}
 
 
