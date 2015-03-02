@@ -19,16 +19,21 @@ int readerIteration;
 int writerIteration;
 
 
+struct waitReader {
+	double waitTime_reader[nbReader];
+	double average;
+	double min_waitTime; 
+	double max_waitTime; 
+};
 
-double waitTime_reader[nbReader];
+struct waitReader r_wait; 
 double waitTime_writer[nbWriter];
 
 
 void *Writer(void *arg) {
 
 
-	//measure the time here 
-
+	//measure the time here using gettimeofday() 
 	struct timeval start, end;
 
 	gettimeofday(&start, NULL);  
@@ -51,13 +56,13 @@ void *Writer(void *arg) {
 		// end of critical section
 
 		//sleep(1);
-		usleep(101000);
+		usleep(randomTime);
 		signal(rw_mutex);
 	}		
 	gettimeofday(&end, NULL);  
     double t2 = end.tv_sec * 1000000 +(end.tv_usec);  
 
-    waitTime_writer[WriterNumber]= t2 - t1;
+   // waitTime_writer[WriterNumber]= t2 - t1;
     
 
 }
@@ -67,29 +72,42 @@ void *Reader (void *arg) {
 	
 	//measure the time here
 	struct timeval start, end;
-
-	gettimeofday(&start, NULL);  
+	
+	 
 
 
 	int ReaderNumber;
 	int i; 
+	r_wait.average = 0;
+
 	for (i = 0; i < readerIteration; i++) {
 
 		int randomTime = rand() % 101000;
 
 		ReaderNumber = (int) arg;
+		
+		gettimeofday(&start, NULL); 
 		wait(mutex); 
+		gettimeofday(&end, NULL); 
+
+		double newTime = ((end.tv_sec * 1000000 + end.tv_usec)
+		  - (start.tv_sec * 1000000 + start.tv_usec));
+
+		r_wait.average = (r_wait.average*(readerIteration-1)+newTime)/readerIteration;
+
+
+
 		read_count++;
 		if (read_count ==1) 
 			wait(rw_mutex);
 		signal(mutex);
 
-		//start of critical section
+		//start of critical section 
 		printf("Reader %d is reading the number: %d\n", ReaderNumber,glob);
 		//end of critical section		
 
-		//sleep(1);
-		usleep(101000);
+
+		usleep(randomTime);
 		wait(mutex);
 		read_count--; 
 
@@ -97,10 +115,10 @@ void *Reader (void *arg) {
 			signal(rw_mutex);
 		signal(mutex);
 	}
-	gettimeofday(&end, NULL);  
+	 
 
-	waitTime_reader[ReaderNumber] = ((end.tv_sec * 1000000 + end.tv_usec)
-		  - (start.tv_sec * 1000000 + start.tv_usec));
+	//waitTime_reader[ReaderNumber] = ((end.tv_sec * 1000000 + end.tv_usec)
+	//	  - (start.tv_sec * 1000000 + start.tv_usec));
 
 }
 
@@ -160,15 +178,24 @@ int main(int argc, char *argv[]) {
 			s = pthread_join(t_write[j], NULL);
 	}
 
-
-	for (i = 0; i<nbWriter; i++) {
-		printf("%.1f microseconds elapsed\n", waitTime_writer[i]);
-	}
+	printf("\n");
+	printf("\n");
+	printf("***********Waiting time of the threads *************\n");
+	printf("\n");
 	printf("\n");
 
-	for (i = 0; i<nbReader; i++) {
-		printf("%.1f microseconds elapsed\n", waitTime_reader[i]);
-	}
+	printf("Writer threads:\n");
+	//for (i = 0; i<nbWriter; i++) {
+	//	printf("%.1f microseconds elapsed\n", waitTime_writer[i]);
+	//}
+	printf("\n");
+
+	printf("Reader threads: \n");
+
+	printf("Average time: %.1f microseconds\n", r_wait.average);
+	//for (i = 0; i<nbReader; i++) {
+	//	printf("%.1f microseconds elapsed\n", waitTime_reader[i]);
+	//}
 
 
 	return 0;
