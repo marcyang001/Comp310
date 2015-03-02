@@ -2,27 +2,45 @@
 #include <stdio.h>
 #include <semaphore.h>
 #include <pthread.h>
+#include <time.h>
+
+#define nbReader 10
+#define nbWriter 6
 
 
-static int glob = 0;
-static sem_t sem;
+
 
 sem_t rw_mutex; //global variable shared with reader and writer
 sem_t mutex;  // mutual exclusion variable (how many readers)
 int read_count = 0;
+static int glob = 0; //global content accessed by the reader and writer
+
 int readerIteration;
 int writerIteration;
 
 
 
-void * Writer(void *arg) {
+double waitTime_reader[nbReader];
+double waitTime_writer[nbWriter];
 
-	int i = 0;
-	while (i < writerIteration) {
+
+void *Writer(void *arg) {
+
+
+	//measure the time here 
+
+	struct timeval start, end;
+
+	gettimeofday(&start, NULL);  
+    double t1 = start.tv_sec * 1000000 +(start.tv_usec);
+
+	int i;
+	int WriterNumber;
+	for (i = 0; i < writerIteration; i++) {
 	//do{
 		
 		int randomTime = rand() % 101000;
-		int WriterNumber = (int)arg;
+		WriterNumber = (int)arg;
 		wait(rw_mutex);
 
 		//start of critical section
@@ -35,20 +53,31 @@ void * Writer(void *arg) {
 		//sleep(1);
 		usleep(101000);
 		signal(rw_mutex);
-		
-		i++;		
-	}
+	}		
+	gettimeofday(&end, NULL);  
+    double t2 = end.tv_sec * 1000000 +(end.tv_usec);  
+
+    waitTime_writer[WriterNumber]= t2 - t1;
+    
+
 }
 
 void *Reader (void *arg) {
 
-	int i = 0; 
-	while (i < readerIteration) {
-	//do {
+	
+	//measure the time here
+	struct timeval start, end;
+
+	gettimeofday(&start, NULL);  
+
+
+	int ReaderNumber;
+	int i; 
+	for (i = 0; i < readerIteration; i++) {
 
 		int randomTime = rand() % 101000;
 
-		int ReaderNumber = (int) arg;
+		ReaderNumber = (int) arg;
 		wait(mutex); 
 		read_count++;
 		if (read_count ==1) 
@@ -67,11 +96,11 @@ void *Reader (void *arg) {
 		if(read_count ==0) 
 			signal(rw_mutex);
 		signal(mutex);
-
-		i++;
 	}
-	//while(1);
+	gettimeofday(&end, NULL);  
 
+	waitTime_reader[ReaderNumber] = ((end.tv_sec * 1000000 + end.tv_usec)
+		  - (start.tv_sec * 1000000 + start.tv_usec));
 
 }
 
@@ -80,17 +109,18 @@ void *Reader (void *arg) {
 
 int main(int argc, char *argv[]) {
 
-	int nbReader = 10;
-	int nbWriter = 6;
+
 	pthread_t t_read[nbReader], t_write[nbWriter];
 	pthread_t r1, w1;
 	int s, i, j; 
-	
+
+	if (argc != 3) {
+		printf("Usage: ProgramName [Number-of-Reader-Access] [Number-of-Access]\n");
+		exit(0);
+	}
+
 	readerIteration = atoi(argv[1]);
 	writerIteration = atoi(argv[2]);
-
-
-	int nbIteration = 10;
 
 	//initialize semaphore rw_mutex = 1 
   	if (sem_init(&rw_mutex, 0, 1) == -1) {
@@ -104,12 +134,11 @@ int main(int argc, char *argv[]) {
     	exit(1);
   	}
 
-  	
-
   	//creation of 100 reader threads 
 	for (i = 0; i < nbReader; i++) {
 		if (i < nbReader) {
 			s = pthread_create(&t_read[i], NULL, Reader, (void *)i);
+
 		}
 
 	}
@@ -131,6 +160,15 @@ int main(int argc, char *argv[]) {
 			s = pthread_join(t_write[j], NULL);
 	}
 
+
+	for (i = 0; i<nbWriter; i++) {
+		printf("%.1f microseconds elapsed\n", waitTime_writer[i]);
+	}
+	printf("\n");
+
+	for (i = 0; i<nbReader; i++) {
+		printf("%.1f microseconds elapsed\n", waitTime_reader[i]);
+	}
 
 
 	return 0;
