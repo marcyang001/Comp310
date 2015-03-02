@@ -4,8 +4,8 @@
 #include <pthread.h>
 #include <time.h>
 
-#define nbReader 10
-#define nbWriter 6
+#define nbReader 100
+#define nbWriter 10
 
 
 
@@ -17,17 +17,17 @@ static int glob = 0; //global content accessed by the reader and writer
 
 int readerIteration;
 int writerIteration;
-
+double tempWrite = -1;
+double tempRead = -1;
 
 struct waitReader {
-	//double waitTime_reader[readerIteration];
 	double average;
 	double min_waitTime; 
 	double max_waitTime; 
 };
 
 struct waitWriter {
-	//double waitTime_reader[readerIteration];
+	
 	double average;
 	double min_waitTime; 
 	double max_waitTime; 
@@ -45,19 +45,50 @@ void *Writer(void *arg) {
 	//measure the time here using gettimeofday() 
 	struct timeval start, end;
 
-	gettimeofday(&start, NULL);  
-    double t1 = start.tv_sec * 1000000 +(start.tv_usec);
+	
 
 	int i;
 	int WriterNumber;
-	r_wait.min_waitTime = -1;
-	r_wait.max_waitTime = -1;
+		
+	w_wait.average = 0;
+	//w_wait.min_waitTime = -1; //initialize min 
+	//w_wait.max_waitTime = -1; //initialize max
+
+	//start timer 
+	gettimeofday(&start, NULL);  
 	for (i = 0; i < writerIteration; i++) {
 	//do{
 		
 		int randomTime = rand() % 101000;
 		WriterNumber = (int)arg;
 		wait(rw_mutex);
+
+		//end timer 
+		gettimeofday(&end, NULL); 
+		
+		double newTime = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
+		//find average time 
+		w_wait.average = (w_wait.average*(writerIteration) + newTime)/(writerIteration+1);
+		
+		//printf("%lf\n", newTime);
+		
+		//find max and min time 
+		if( i == 0 && (tempWrite < 0 )) {
+			//printf("ENTER HERE!!!!\n");
+			tempWrite = newTime;
+			w_wait.min_waitTime = tempWrite;
+			w_wait.max_waitTime = tempWrite;
+		}
+		else {
+			if(newTime < tempWrite) {
+				w_wait.min_waitTime = newTime;
+			}
+			if (newTime > tempWrite) {
+				w_wait.max_waitTime = newTime;
+			}
+		}
+		
+
 
 		//start of critical section
 		int temp = glob; 
@@ -66,12 +97,12 @@ void *Writer(void *arg) {
 		printf("Writer %d increments the value from %d to %d\n", WriterNumber,temp, glob);
 		// end of critical section
 
+
 		//sleep(1);
 		usleep(randomTime);
 		signal(rw_mutex);
 	}		
-	gettimeofday(&end, NULL);  
-    double t2 = end.tv_sec * 1000000 +(end.tv_usec);  
+	  
 
   // 	r_wait.waitTime_writer[WriterNumber]= t2 - t1;
     
@@ -90,7 +121,7 @@ void *Reader (void *arg) {
 	int ReaderNumber;
 	int i; 
 	r_wait.average = 0;
-	r_wait.min_waitTime = -0.1;
+	
 	
 	//start the timer
 	gettimeofday(&start, NULL);
@@ -103,40 +134,39 @@ void *Reader (void *arg) {
  
 		wait(mutex); 
 		
+		//end the timer
 		gettimeofday(&end, NULL); 
 
 		double newTime = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
+		
 		r_wait.average = (r_wait.average*(readerIteration) +newTime)/(readerIteration+1);
+
+
+
+		//printf("%lf\n", newTime);
+
+		//get max and min 
+		if( i == 0 && (tempRead < 0 )) {
+			//printf("ENTER HERE!!!!\n");
+			tempRead = newTime;
+			//printf("NOW:: %lf\n", tempRead);
+			r_wait.min_waitTime = tempRead;
+			r_wait.max_waitTime = tempRead;
+		}
+		else {
+			if(newTime < tempRead) {
+				r_wait.min_waitTime = newTime;
+			}
+			if (newTime > tempRead) {
+				r_wait.max_waitTime = newTime;
+			}
+		}
 
 
 		read_count++;
 		if (read_count ==1) 
 			wait(rw_mutex);
 		signal(mutex);
-
-
-		
-
-		//printf("%lf\n", newTime);
-		if (i == 0 && (r_wait.min_waitTime <0 )) { //store the first timer 
-			r_wait.min_waitTime = newTime;
-			
-		}
-		else if (i == 0 && (r_wait.max_waitTime < 0)){
-			r_wait.max_waitTime = newTime;
-		}
-		else if (i > 0) { //compare the first with the new time
-			
-			if (newTime < r_wait.min_waitTime) { 
-				r_wait.min_waitTime = newTime;
-				//printf("Entered here : %lf\n", newTime);
-			}
-			if (newTime > r_wait.max_waitTime) {
-				r_wait.max_waitTime = newTime;
-			}
-
-		}
-		//r_wait.waitTime_reader[ReaderNumber] = newTime;
 
 
 		//start of critical section 
@@ -221,6 +251,9 @@ int main(int argc, char *argv[]) {
 	printf("\n");
 
 	printf("Writer threads:\n");
+	printf("Average waiting time: %.1f microseconds\n", w_wait.average);
+	printf("Minimum waiting time: %.1f microseconds\n", w_wait.min_waitTime);
+	printf("Maximum waiting time: %.1f microseconds\n", w_wait.max_waitTime);
 	//for (i = 0; i<nbWriter; i++) {
 	//	printf("%.1f microseconds elapsed\n", waitTime_writer[i]);
 	//}
