@@ -123,7 +123,7 @@ void *Reader (void *arg) {
 	for (i = 0; i < readerIteration; i++) {
 
 
-		int randomTime = rand() % 101000;
+		int randomTime = rand() % 100001; //generate 0 to 100 milliseconds
 
 		ReaderNumber = (int) arg;
  
@@ -169,6 +169,7 @@ void *Reader (void *arg) {
 		//end of critical section		
 
 
+		//
 		usleep(randomTime);
 		wait(mutex);
 		read_count--; 
