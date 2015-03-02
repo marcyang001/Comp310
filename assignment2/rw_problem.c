@@ -79,22 +79,22 @@ void *Reader (void *arg) {
 	int ReaderNumber;
 	int i; 
 	r_wait.average = 0;
-
+	gettimeofday(&start, NULL);
 	for (i = 0; i < readerIteration; i++) {
 
 		int randomTime = rand() % 101000;
 
 		ReaderNumber = (int) arg;
 		
-		gettimeofday(&start, NULL); 
+		 
 		wait(mutex); 
 		gettimeofday(&end, NULL); 
 
 		double newTime = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
 
-		r_wait.average = (r_wait.average*(readerIteration) +newTime)/(readerIteration-1);
+		r_wait.average = (r_wait.average*(readerIteration) +newTime)/(readerIteration+1);
 
-
+		//printf("%lf\n", newTime);
 
 		read_count++;
 		if (read_count ==1) 
