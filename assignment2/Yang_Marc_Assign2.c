@@ -57,7 +57,7 @@ void *Writer(void *arg) {
 	for (i = 0; i < writerIteration; i++) {
 	//do{
 		
-		int randomTime = rand() % 101000;
+		int randomTime = rand() % 100001; //generate from 0 to 100 milliseconds
 		WriterNumber = (int)arg;
 		wait(rw_mutex);
 
