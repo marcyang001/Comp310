@@ -17,20 +17,17 @@ static int glob = 0; //global content accessed by the reader and writer
 
 int readerIteration;
 int writerIteration;
-double tempWrite = -1;
-double tempRead = -1;
 
 struct waitReader {
-	double average;
-	double min_waitTime; 
-	double max_waitTime; 
+	double average_waitTime[nbReader];
+	double min_waitTime[nbReader]; 
+	double max_waitTime[nbReader]; 
 };
 
 struct waitWriter {
-	
-	double average;
-	double min_waitTime; 
-	double max_waitTime; 
+	double average_waitTime[nbWriter];
+	double min_waitTime[nbWriter]; 
+	double max_waitTime[nbWriter]; 
 };
 
 
@@ -47,45 +44,28 @@ void *Writer(void *arg) {
 
 	
 
-	int i;
-	int WriterNumber;
-		
-	w_wait.average = 0;
+	int i = 0;
+	int WriterNumber = (int)arg;
+	
+	double average;
+	double newTime;
+	w_wait.average_waitTime[WriterNumber] = 0;
+	
 
-	//start timer 
-	gettimeofday(&start, NULL);  
-	for (i = 0; i < writerIteration; i++) {
-	//do{
+
+	//for (i = 0; i < writerIteration; i++) {
+	do{
 		
 		int randomTime = rand() % 100001; //generate from 0 to 100 milliseconds
-		WriterNumber = (int)arg;
+		
+		//start timer 
+		gettimeofday(&start, NULL);  
 		wait(rw_mutex);
 
 		//end timer 
 		gettimeofday(&end, NULL); 
 		
-		double newTime = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
-		//find average time 
-		w_wait.average = (w_wait.average*(writerIteration) + newTime)/(writerIteration+1);
-		
-		//printf("%lf\n", newTime);
-		
-		//find max and min time 
-		if( i == 0 && (tempWrite < 0 )) {
-			//printf("ENTER HERE!!!!\n");
-			tempWrite = newTime;
-			w_wait.min_waitTime = tempWrite;
-			w_wait.max_waitTime = tempWrite;
-		}
-		else {
-			if(newTime < tempWrite) {
-				w_wait.min_waitTime = newTime;
-			}
-			if (newTime > tempWrite) {
-				w_wait.max_waitTime = newTime;
-			}
-		}
-		
+
 
 
 		//start of critical section
@@ -99,8 +79,39 @@ void *Writer(void *arg) {
 		//sleep(1);
 		usleep(randomTime);
 		signal(rw_mutex);
-	}		
-	      
+
+		newTime = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
+		
+		average = (average*(i) +newTime)/(i+1);
+
+		//find max and min time 
+		if( i == 0 ) { //first time when i = 0, store any value; 
+			w_wait.min_waitTime[WriterNumber] = newTime;
+			w_wait.max_waitTime[WriterNumber] = newTime;
+		}
+		else { //else start comparing when i > 0
+			if(newTime < w_wait.min_waitTime[WriterNumber]) {
+				w_wait.min_waitTime[WriterNumber] = newTime;
+			}
+			if (newTime > w_wait.max_waitTime[WriterNumber]) {
+				w_wait.max_waitTime[WriterNumber] = newTime;
+			}
+		}
+
+		//store the addition of all the wait time from each access of a thread
+		//w_wait.average_waitTime[WriterNumber] += newTime;
+
+		
+
+
+		i++;
+	}
+	while (i < writerIteration);
+
+	//store the average of X number of access of each thread 
+	//w_wait.average_waitTime[WriterNumber] = w_wait.average_waitTime[WriterNumber]/writerIteration; 
+	w_wait.average_waitTime[WriterNumber] = average;
+
 
 }
 
@@ -113,50 +124,30 @@ void *Reader (void *arg) {
 	 
 
 
-	int ReaderNumber;
-	int i; 
-	r_wait.average = 0;
+	int ReaderNumber = (int) arg;
+	int i = 0; 
 	
+	double newTime1; 
+	double newTime2;
+	double totalWait;
+	double average;
+	r_wait.average_waitTime[ReaderNumber] = 0;
 	
-	//start the timer
-	gettimeofday(&start, NULL);
-	for (i = 0; i < readerIteration; i++) {
+	do {
 
 
 		int randomTime = rand() % 100001; //generate 0 to 100 milliseconds
 
-		ReaderNumber = (int) arg;
- 
-		wait(mutex); 
+		//ReaderNumber = (int) arg;
+ 		
+ 		//start the timer
+		gettimeofday(&start, NULL);
 		
+		wait(mutex); 
 		//end the timer
 		gettimeofday(&end, NULL); 
 
-		double newTime = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
-		
-		r_wait.average = (r_wait.average*(readerIteration) +newTime)/(readerIteration+1);
-
-
-
-		//printf("%lf\n", newTime);
-
-		//get max and min 
-		if( i == 0 && (tempRead < 0 )) {
-			//printf("ENTER HERE!!!!\n");
-			tempRead = newTime;
-			//printf("NOW:: %lf\n", tempRead);
-			r_wait.min_waitTime = tempRead;
-			r_wait.max_waitTime = tempRead;
-		}
-		else {
-			if(newTime < tempRead) {
-				r_wait.min_waitTime = newTime;
-			}
-			if (newTime > tempRead) {
-				r_wait.max_waitTime = newTime;
-			}
-		}
-
+		newTime1 = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
 
 		read_count++;
 		if (read_count ==1) 
@@ -169,16 +160,59 @@ void *Reader (void *arg) {
 		//end of critical section		
 
 
-		//
-		usleep(randomTime);
-		wait(mutex);
-		read_count--; 
 
+		usleep(randomTime);
+		
+		//start the timer
+		gettimeofday(&start, NULL);
+		
+		wait(mutex); 
+		//end the timer
+		gettimeofday(&end, NULL); 
+		newTime2 = ((end.tv_sec * 1000000 + end.tv_usec)- (start.tv_sec * 1000000 + start.tv_usec));
+
+
+		//second Critical section 
+		read_count--; 
+		//out of critical section 
+
+		//find min and max 
 		if(read_count ==0) 
 			signal(rw_mutex);
 		signal(mutex);
+
+		totalWait = newTime1 + newTime2;
+		
+		//printf("HERE is %d\n", i);
+		//r_wait.average_waitTime[ReaderNumber] += totalWait;
+		average = (average*(i) +newTime1 + newTime2)/(i+1);
+
+		if( i == 0) {
+			//r_wait.average_waitTime[ReaderNumber] = totalWait;
+			r_wait.min_waitTime[ReaderNumber] = totalWait;
+			r_wait.max_waitTime[ReaderNumber] = totalWait;
+		}
+		else {
+			if(totalWait < r_wait.min_waitTime[ReaderNumber]) {
+				r_wait.min_waitTime[ReaderNumber] = totalWait;
+			}
+			if (totalWait > r_wait.max_waitTime[ReaderNumber]) {
+				r_wait.max_waitTime[ReaderNumber] = totalWait;
+			}
+		}
+		
+		i++;
+		
+		//
+		
+
+	} while (i < readerIteration);
+	if (readerIteration == 0) {
+		readerIteration = 1;
 	}
-	 
+
+	//r_wait.average_waitTime[ReaderNumber] = r_wait.average_waitTime[ReaderNumber]/readerIteration;
+	r_wait.average_waitTime[ReaderNumber] = average;
 
 	
 
@@ -216,11 +250,7 @@ int main(int argc, char *argv[]) {
 
   	//creation of 100 reader threads 
 	for (i = 0; i < nbReader; i++) {
-		if (i < nbReader) {
-			s = pthread_create(&t_read[i], NULL, Reader, (void *)i);
-
-		}
-
+		s = pthread_create(&t_read[i], NULL, Reader, (void *)i);
 	}
 	// creation of 10 writer threads
 	
@@ -231,13 +261,11 @@ int main(int argc, char *argv[]) {
 
 
 	for (i = 0; i<nbReader; i++) {
-		if( i < nbReader)
-			s = pthread_join(t_read[i], NULL);
+		s = pthread_join(t_read[i], NULL);
 	}
 
-	for (j = 0; j<nbWriter; j++) {
-		if(j < nbWriter)
-			s = pthread_join(t_write[j], NULL);
+	for (j = 0; j < nbWriter; j++) {
+		s = pthread_join(t_write[j], NULL);
 	}
 
 	printf("\n");
@@ -246,18 +274,64 @@ int main(int argc, char *argv[]) {
 	printf("\n");
 	printf("\n");
 
+
 	printf("Writer threads:\n");
-	printf("Average waiting time: %.1f microseconds\n", w_wait.average);
-	printf("Minimum waiting time: %.1f microseconds\n", w_wait.min_waitTime);
-	printf("Maximum waiting time: %.1f microseconds\n", w_wait.max_waitTime);
+	
+	double averageWriterThread = 0; 
+	for (j = 0; j < nbWriter; j++) {
+		averageWriterThread += w_wait.average_waitTime[j];
+	} 
+	averageWriterThread = averageWriterThread/nbWriter;
+	printf("Average waiting time: %.1f microseconds\n", averageWriterThread);
+	
+	double maxWaitWriter = w_wait.max_waitTime[0];
+	for (j = 0; j < nbWriter; j++) {
+		if(w_wait.max_waitTime[j] > maxWaitWriter) {
+			maxWaitWriter = w_wait.max_waitTime[j];
+		}
+		
+	}
+
+	printf("Maximum waiting time: %.1f microseconds\n", maxWaitWriter);
+
+	double minWaitWriter = w_wait.min_waitTime[0];
+	for (j = 0; j < nbWriter; j++) {
+		if (w_wait.min_waitTime[j] < minWaitWriter) {
+			minWaitWriter = w_wait.min_waitTime[j];
+		}
+	}
+	printf("Minimum waiting time: %.1f microseconds\n", minWaitWriter);
+//******************************************************************/
 
 	printf("\n");
 
 	printf("Reader threads: \n");
+	
+	double averageReaderThread = 0;
+	
+	for (i = 0; i < nbReader; i++) {
+		averageReaderThread += r_wait.average_waitTime[i];
+	}
+	averageReaderThread = averageReaderThread/nbReader;
+	printf("Average waiting time: %.2f microseconds\n", averageReaderThread);
+	
 
-	printf("Average waiting time: %.1f microseconds\n", r_wait.average);
-	printf("Minimum waiting time: %.1f microseconds\n", r_wait.min_waitTime);
-	printf("Maximum waiting time: %.1f microseconds\n", r_wait.max_waitTime);
+	double maxWaitReader = r_wait.max_waitTime[0]; 
+	for (i = 0; i < nbReader; i++) {
+		if (r_wait.max_waitTime[i] > maxWaitReader) {
+			maxWaitReader = r_wait.max_waitTime[i];
+		}
+	}
+
+	printf("Maximum waiting time: %.2f microseconds\n", maxWaitReader);
+
+	double minWaitReader = r_wait.min_waitTime[0]; 
+	for (i = 0; i < nbReader; i++) {
+		if (r_wait.min_waitTime[i] < minWaitReader) {
+			minWaitReader = r_wait.min_waitTime[i];
+		}
+	}
+	printf("Minimum waiting time: %.2f microseconds\n", minWaitReader);
 
 
 	return 0;
