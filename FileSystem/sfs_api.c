@@ -1,11 +1,10 @@
 
 #define BLOCK_SIZE 512
-
 #define MAX_FILES 100
 #define MAX_FILE_LENGTH 16
-#define MAX_FILE_EXTENTION 3
-#define FILE_SYSTEM_SIZE 4
-
+//#define MAX_FILE_EXTENTION 3
+//#define FILE_SYSTEM_SIZE 
+#define NUM_BLOCKS 2048
 
 #include <stdio.h>
 #include <stdlib.h> 
@@ -16,18 +15,24 @@
 #include "disk_emu.h"
 #include "sfs_api.h"
 
-static int NUM_BLOCKS = 3 + MAX_FILES;
 
-// root directory
+
+
+
+// data_block, each block size is 512
 typedef struct { 
 
 	char filename[MAX_FILE_LENGTH];
-	char fileExtension[MAX_FILE_EXTENTION];
+	//char fileExtension[MAX_FILE_EXTENTION];
 	int filesize; 
 	int inode; // this is the inode number that will put into the inode table 
-	int is_occupied; //the free BitMap;
+	//int is_occupied; //the free BitMap;
 
-}root_Dir;
+}data_block;
+
+//free bitmap 0 for unoccupied, 1 for occupied 
+int bitmap[NUM_BLOCKS];
+
 
 //super block
 typedef struct { 
@@ -40,14 +45,18 @@ typedef struct {
 
 }super_block;
 
-// inode table
 typedef struct { 
-	// pointer 1 - 12 are direct pointers
-	int *pointer[12];  
-	int *indirectPointer; 
-	// pointer 13 is single indirect pointers 
+	int mode; 
+	int link_cnt; 
+	int uid; 
+	int gid; 
+	int size; 
+	int pointer[12];  
+	int indirectPointer; 
 
-}inode_table;
+}i_node; 
+
+
 
 // file descriptor table
 typedef struct {
