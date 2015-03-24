@@ -20,6 +20,7 @@
 
 
 // data_block, each block size is 512
+
 typedef struct { 
 
 	char filename[MAX_FILE_LENGTH];
@@ -30,8 +31,14 @@ typedef struct {
 
 }data_block;
 
+
+
+
+
 //free bitmap 0 for unoccupied, 1 for occupied 
-int bitmap[NUM_BLOCKS];
+//0b1100000
+
+//char BitMap[NUM_BLOCKS];
 
 
 //super block
@@ -74,7 +81,7 @@ void set_fdt(int i, int open, int read, int write);
 int mksfs(int fresh) { 
 
 	if (fresh) {
-		init_fresh_disk("SFS", BLOCK_SIZE, NUM_BLOCKS);
+		init_fresh_disk("TESTSFS", BLOCK_SIZE, NUM_BLOCKS);
 	}
 
 
