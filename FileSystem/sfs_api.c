@@ -141,6 +141,7 @@ int sfs_fopen(char *name) {
 	int i,j, iNodeIndex, dataIndex;
 	int currentInode;
 	int iNodeNumber, FREEDATABLOCK;
+	int actualBlock;
 	for (i = 0; i<MAX_FILES; i++){
 		if (strcmp(name, files[i].filename) ==0){
 			//search for empty descriptor table 
@@ -179,13 +180,17 @@ int sfs_fopen(char *name) {
 				
 				printf("Inode number: %d\n", iNodeNumber);
 				
-
+				files[iNodeNumber].inode = iNodeNumber;
+				strcpy(files[iNodeNumber].filename, name);
+				fileNode[iNodeNumber].size = 0;
 				break;
 			}	
 		}
 		if (signNode != 1) {
 			printf("No free inode\n");
 		}
+
+
 		// find the free data block in the data bitmap
 		for (dataIndex = 0; dataIndex < DATA_BITMAP; dataIndex++) {
 			if (bitmap.dataBitMap[dataIndex] != 0b00000000) {
@@ -211,12 +216,15 @@ int sfs_fopen(char *name) {
 		}
 
 		if (signData == 1) {
+			printf("Block operation!!! \n");
 			//add file to root directory with the free inode
-			files[iNodeNumber].inode = iNodeNumber;
-			strcpy(files[iNodeNumber].filename, name);
-			//update the new file size 
-			fileNode[iNodeNumber].size = 0;
-
+			actualBlock = FREEDATABLOCK + 14; // 14 is the end of the inode table
+			//the first pointer of the inode of that file has to pointer to the right block
+			fileNode[iNodeNumber].pointer[0] = actualBlock;
+		
+			//update the inode table
+			write_blocks(2, 13, &fileNode);
+			write_blocks(actualBlock, 1, &files);
 		}
 
 		
