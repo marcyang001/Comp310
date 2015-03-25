@@ -5,7 +5,7 @@
 #define MAX_FILE_EXTENTION 4
 #define NUM_BLOCKS 2048
 #define INODE_BITMAP 4
-#define DATA_BITMAP 64
+#define DATA_BITMAP 254
 
 #include <stdio.h>
 #include <stdlib.h> 
@@ -70,8 +70,8 @@ typedef struct {
 	//we need 13 because we need 100 inodes, each char = 8bits. so ceil(100/8) = 13
 	char iNodeBitMap[13]; 
 	//int iNodeBitMap[INODE_BITMAP]; // we need 128 bytes for 100 files 
-	//int dataBitMap[DATA_BITMAP]; //(2040 - 16)/32
- 	char dataBitMap[254]; // 2048 - 16/ 8 
+	
+ 	char dataBitMap[254]; // 2048 - 17/ 8 
 // data_block, each block size is 512
 }s_bitmap;
 
@@ -138,9 +138,9 @@ int mksfs(int fresh) {
 }
 
 int sfs_fopen(char *name) {
-	int i,j, iNodeIndex;
+	int i,j, iNodeIndex, dataIndex;
 	int currentInode;
-	int iNodeNumber;
+	int iNodeNumber, FREEDATABLOCK;
 	for (i = 0; i<MAX_FILES; i++){
 		if (strcmp(name, files[i].filename) ==0){
 			//search for empty descriptor table 
@@ -159,38 +159,65 @@ int sfs_fopen(char *name) {
 	//create a new file
 	if (i==MAX_FILES){
 		//find free inode
-		char temp = 0b11111111;
-		int sign;
-
+		char constant = 0b11111111;
+		int signNode, signData;
+		//check for free inode 
 		for (iNodeIndex = 0; iNodeIndex < INODE_BITMAP; iNodeIndex++) {
 			//printf("Entered here!!!! %d\n", ffs(bitmap.iNodeBitMap[iNodeIndex]));
 			if(bitmap.iNodeBitMap[iNodeIndex] != 0b00000000) {
 				printf("Free INODE EXISTS\n");
-				sign = 1;
+				signNode = 1;
 				int FREEiNode = ffs(bitmap.iNodeBitMap[iNodeIndex]);
 				printf("Free inode: %d, inode index %d\n", FREEiNode, iNodeIndex);
 
-				temp = temp << FREEiNode;
+				char temp = constant << FREEiNode;
 				//turn off the inode bit 
 				bitmap.iNodeBitMap[iNodeIndex] = temp & bitmap.iNodeBitMap[iNodeIndex];
+				
 				printf("Free inode: %d, inode index %d\n", ffs(bitmap.iNodeBitMap[iNodeIndex]), iNodeIndex);
 				iNodeNumber = FREEiNode * (iNodeIndex + 1) -1;
 				
 				printf("Inode number: %d\n", iNodeNumber);
 				
-				//add file to root directory with the free inode
-				files[iNodeNumber].inode = iNodeNumber;
-				strcpy(files[iNodeNumber].filename, name);
-				//update the new file size 
-				fileNode[iNodeNumber].size = 0;
 
 				break;
 			}	
 		}
-		if (sign != 1) {
+		if (signNode != 1) {
 			printf("No free inode\n");
 		}
+		// find the free data block in the data bitmap
+		for (dataIndex = 0; dataIndex < DATA_BITMAP; dataIndex++) {
+			if (bitmap.dataBitMap[dataIndex] != 0b00000000) {
+				printf("Free DATA BLOCK EXISTS\n");
+				signData = 1;
+				FREEDATABLOCK = ffs(bitmap.dataBitMap[dataIndex]);
+				
+				printf("Free data block: %d, block index %d\n", FREEDATABLOCK, dataIndex);
 
+				char temp = constant << FREEDATABLOCK;
+
+				bitmap.dataBitMap[dataIndex] = temp & bitmap.dataBitMap[dataIndex];
+
+				printf("Free block: %d, data index %d\n", ffs(bitmap.dataBitMap[dataIndex]), dataIndex);
+
+
+
+				break;
+			}
+		}
+		if (signData != 1) {
+			printf("No free data block\n");
+		}
+
+		if (signData == 1) {
+			//add file to root directory with the free inode
+			files[iNodeNumber].inode = iNodeNumber;
+			strcpy(files[iNodeNumber].filename, name);
+			//update the new file size 
+			fileNode[iNodeNumber].size = 0;
+
+		}
 
 		
 		
@@ -198,7 +225,9 @@ int sfs_fopen(char *name) {
 		
 		//find free block, add block number to inode.
 		//find free file descriptor
-		//update bitmap
+		
+		//update the bitmap
+		write_blocks(1, 1, &bitmap);
 	}
 
 
