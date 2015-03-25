@@ -2,9 +2,10 @@
 #define BLOCK_SIZE 512
 #define MAX_FILES 100
 #define MAX_FILE_LENGTH 16
-//#define MAX_FILE_EXTENTION 3
-//#define FILE_SYSTEM_SIZE 
+#define MAX_FILE_EXTENTION 4
 #define NUM_BLOCKS 2048
+#define INODE_BITMAP 4
+#define DATA_BITMAP 64
 
 #include <stdio.h>
 #include <stdlib.h> 
@@ -19,26 +20,15 @@
 
 
 
-// data_block, each block size is 512
-
 typedef struct { 
 
 	char filename[MAX_FILE_LENGTH];
-	//char fileExtension[MAX_FILE_EXTENTION];
-	int filesize; 
+	char fileExtension[MAX_FILE_EXTENTION];
 	int inode; // this is the inode number that will put into the inode table 
-	//int is_occupied; //the free BitMap;
-
-}data_block;
 
 
+}root_directory;
 
-
-
-//free bitmap 0 for unoccupied, 1 for occupied 
-//0b1100000
-
-//char BitMap[NUM_BLOCKS];
 
 
 //super block
@@ -49,39 +39,99 @@ typedef struct {
 	int fileSystemSize;  // # of blocks 
 	int iNode_Table_length; // 12 direct pointers + 1 single indirect pointers 
 	int rootDirectory; //Root Dictory i-Node # 
+	int unused[123];
 
 }super_block;
 
+
+
 typedef struct { 
-	int mode; 
-	int link_cnt; 
-	int uid; 
+	char mode; 
+	char link_cnt; 
+	short  uid; 
 	int gid; 
-	int size; 
+	int size; //file size 
 	int pointer[12];  
-	int indirectPointer; 
+	int indirect; 
 
 }i_node; 
-
 
 
 // file descriptor table
 typedef struct {
 	int open;
-	int read;
-	int write;
+	int rw_pointer;
+	//int fileID;
+	int inode;
 
 } fdt_list;
 
 
+typedef struct { 
+	//we need 13 because we need 100 inodes, each char = 8bits. so ceil(100/8) = 13
+	char iNodeBitMap[13]; 
+	//int iNodeBitMap[INODE_BITMAP]; // we need 128 bytes for 100 files 
+	//int dataBitMap[DATA_BITMAP]; //(2040 - 16)/32
+ 	char dataBitMap[254]; // 2048 - 16/ 8 
+// data_block, each block size is 512
+}s_bitmap;
+
+s_bitmap bitmap;
+
+super_block superBlock;
+
+//100 inodes correspond to 100 files, 4 extra are to accumulate 13 byte bitmap
+i_node fileNode[104];
+
+
+root_directory files[107];
+
+//file descriptor table
 fdt_list fileDescriptor[MAX_FILES]; // each file is associated with a file descriptor
 
-void set_fdt(int i, int open, int read, int write);
+//free bitmap 0 for unoccupied, 1 for occupied 
+//0b1100000
+
+
+
+
+
+void initial_superBlock();
+void initial_root();
+void initial_Bitmap();
+int FFS (char valu);
 
 int mksfs(int fresh) { 
 
 	if (fresh) {
-		init_fresh_disk("TESTSFS", BLOCK_SIZE, NUM_BLOCKS);
+		init_fresh_disk("MyFileSystem", BLOCK_SIZE, NUM_BLOCKS);
+		initial_superBlock();
+
+		//Write the directory structure to the 1st block in the FS.
+		write_blocks(0, 1, &superBlock);
+		
+		//initialize the inode table
+		initial_Bitmap();
+		write_blocks(1, 1, &bitmap);
+
+
+		//initialize inode for the root directory 
+		initial_root();
+		//write_blocks(15, 1, &files[0]);
+
+		write_blocks(2, 13, &fileNode);
+
+	}
+
+	else { 
+		init_disk("MyFileSystem", BLOCK_SIZE, NUM_BLOCKS);
+		
+		read_blocks(0, 1, &superBlock);	
+		read_blocks(1, 1, &bitmap);	
+		read_blocks(15, 5, &files[0]); 
+		read_blocks(2, 13, &fileNode);
+
+
 	}
 
 
@@ -89,6 +139,45 @@ int mksfs(int fresh) {
 }
 
 int sfs_fopen(char *name) {
+	int i,j, iNodeIndex;
+	int currentInode;
+	for (i = 0; i<MAX_FILES; i++){
+		if (strcmp(name, files[i].filename) ==0){
+			//search for empty descriptor table 
+			currentInode=files[i].inode;
+			for (j = 0; j < MAX_FILES; j++) {
+				if (fileDescriptor[j].open == 0) {
+					fileDescriptor[j].open = 1;
+					fileDescriptor[j].rw_pointer = fileNode[currentInode].size;
+					fileDescriptor[j].inode=currentInode;
+					break;
+				}
+			}
+			break;
+		}
+	}
+	if (i==MAX_FILES){
+		//find free inode
+		char temp = 0b00000001;
+		int iNodeNumber;
+		for (iNodeIndex = 0; iNodeIndex < INODE_BITMAP; iNodeIndex++) {
+			int FREEiNode = FFS(bitmap.iNodeBitMap[iNodeIndex]);
+
+			temp = temp >> FREEiNode;
+
+			bitmap.iNodeBitMap[iNodeIndex] = temp | bitmap.iNodeBitMap[iNodeIndex];
+
+			break;
+		}
+
+		
+		//add file to root directory with the free inode
+		//find free block, add block number to inode.
+		//find free file descriptor
+		//update bitmap
+	}
+
+
 
 	return 0;
 }
@@ -98,8 +187,9 @@ int sfs_fclose(int fileID){
 	if (fileID > MAX_FILES || fileID < 0 || !fileDescriptor[fileID].open) {
 		return -1;
 	}
+	fileDescriptor[fileID].open = 0; 
+	fileDescriptor[fileID].rw_pointer = 0;
 
-	set_fdt(fileID, 0, 0, 0);
 
 	return 0;
 }
@@ -126,7 +216,9 @@ int sfs_fseek(int fileID, int offset) {
 	if (fileID > MAX_FILES || fileID < 0) {
 		return -1;
 	}
-	set_fdt(fileID, 1, offset, offset);
+
+	fileDescriptor[fileID].open = 1;
+	fileDescriptor[fileID].rw_pointer = offset;
 
 	return 0;
 }
@@ -150,9 +242,62 @@ int sfs_GetFileSize(const char* path) {
 	return 0;
 }
 
+void initial_superBlock() {
+	
+	//initialize the super block 
 
-void set_fdt(int i, int open, int read, int write) {
-	fileDescriptor[i].open = open;
-	fileDescriptor[i].read = read; 
-	fileDescriptor[i].write = write;
+	superBlock.magic = 0xAABB0005; 
+	superBlock.blockSize = 512; 
+	superBlock.fileSystemSize = MAX_FILES;
+	superBlock.iNode_Table_length = 11;
+	superBlock.rootDirectory = 0; //first inode is always 0 -- dont change
+
+}
+
+void initial_Bitmap() {
+	int i; 
+	//the first bit of the bitmap is taken by the root directory
+	//bitmap.iNodeBitMap[0] = 0b00000001;
+	bitmap.iNodeBitMap[0] = 0b00000001;
+	
+	for (i = 1; i < 13; i++) {
+		bitmap.iNodeBitMap[i] = 0b00000000;
+	}
+
+	//assign 5 blocks to the root directory 
+	bitmap.dataBitMap[0] = 0b00011111;
+	for (i = 1; i < 254; i++) {
+		bitmap.dataBitMap[i] = 0b00000000;
+	}
+
+
+
+	
+
+
+	// to find to the next free bit, use ffc(value)
+}
+
+void initial_root() {
+
+	//files[0].inode = 0; 
+	//strcpy(files[0].filename, "..");
+	//strcpy(files[0].filename, ".");
+	//files[0].inode = 0;
+	fileNode[0].size = 0;
+	fileNode[0].pointer[0] = 15;
+
+}
+
+int FFS (char valu)
+
+{
+ 	register int bit;
+
+  	if (valu == 0)
+    	return 0;
+	
+	for (bit = 1; !(valu & 1); bit++)
+  		valu >>= 1;
+  	return bit;
 }
