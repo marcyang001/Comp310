@@ -22,8 +22,8 @@
 
 typedef struct { 
 
-	char filename[MAX_FILE_LENGTH];
-	char fileExtension[MAX_FILE_EXTENTION];
+	char filename[MAX_FILE_LENGTH + 4]; //4 for .XXX extension
+	//char fileExtension[MAX_FILE_EXTENTION];
 	int inode; // this is the inode number that will put into the inode table 
 
 
@@ -61,7 +61,6 @@ typedef struct {
 typedef struct {
 	int open;
 	int rw_pointer;
-	//int fileID;
 	int inode;
 
 } fdt_list;
@@ -99,7 +98,6 @@ fdt_list fileDescriptor[MAX_FILES]; // each file is associated with a file descr
 void initial_superBlock();
 void initial_root();
 void initial_Bitmap();
-int FFS (char valu);
 
 int mksfs(int fresh) { 
 
@@ -117,7 +115,8 @@ int mksfs(int fresh) {
 
 		//initialize inode for the root directory 
 		initial_root();
-		//write_blocks(15, 1, &files[0]);
+		write_blocks(15, 1, &files[0]);
+		write_blocks(16, 1, &files[1]);
 
 		write_blocks(2, 13, &fileNode);
 
@@ -141,6 +140,7 @@ int mksfs(int fresh) {
 int sfs_fopen(char *name) {
 	int i,j, iNodeIndex;
 	int currentInode;
+	int iNodeNumber;
 	for (i = 0; i<MAX_FILES; i++){
 		if (strcmp(name, files[i].filename) ==0){
 			//search for empty descriptor table 
@@ -156,22 +156,46 @@ int sfs_fopen(char *name) {
 			break;
 		}
 	}
+	//create a new file
 	if (i==MAX_FILES){
 		//find free inode
-		char temp = 0b00000001;
-		int iNodeNumber;
+		char temp = 0b11111111;
+		int sign;
+
 		for (iNodeIndex = 0; iNodeIndex < INODE_BITMAP; iNodeIndex++) {
-			int FREEiNode = FFS(bitmap.iNodeBitMap[iNodeIndex]);
+			//printf("Entered here!!!! %d\n", ffs(bitmap.iNodeBitMap[iNodeIndex]));
+			if(bitmap.iNodeBitMap[iNodeIndex] != 0b00000000) {
+				printf("Free INODE EXISTS\n");
+				sign = 1;
+				int FREEiNode = ffs(bitmap.iNodeBitMap[iNodeIndex]);
+				printf("Free inode: %d, inode index %d\n", FREEiNode, iNodeIndex);
 
-			temp = temp >> FREEiNode;
+				temp = temp << FREEiNode;
+				//turn off the inode bit 
+				bitmap.iNodeBitMap[iNodeIndex] = temp & bitmap.iNodeBitMap[iNodeIndex];
+				printf("Free inode: %d, inode index %d\n", ffs(bitmap.iNodeBitMap[iNodeIndex]), iNodeIndex);
+				iNodeNumber = FREEiNode * (iNodeIndex + 1) -1;
+				
+				printf("Inode number: %d\n", iNodeNumber);
+				
+				//add file to root directory with the free inode
+				files[iNodeNumber].inode = iNodeNumber;
+				strcpy(files[iNodeNumber].filename, name);
+				//update the new file size 
+				fileNode[iNodeNumber].size = 0;
 
-			bitmap.iNodeBitMap[iNodeIndex] = temp | bitmap.iNodeBitMap[iNodeIndex];
-
-			break;
+				break;
+			}	
+		}
+		if (sign != 1) {
+			printf("No free inode\n");
 		}
 
+
 		
-		//add file to root directory with the free inode
+		
+		
+		
 		//find free block, add block number to inode.
 		//find free file descriptor
 		//update bitmap
@@ -255,49 +279,34 @@ void initial_superBlock() {
 }
 
 void initial_Bitmap() {
+	
+	printf("Initialize bitmap\n");
+
 	int i; 
 	//the first bit of the bitmap is taken by the root directory
-	//bitmap.iNodeBitMap[0] = 0b00000001;
-	bitmap.iNodeBitMap[0] = 0b00000001;
-	
+
+	// 1 for not taken, 0 for occupied
+	bitmap.iNodeBitMap[0] = 0b11111110;	
+
 	for (i = 1; i < 13; i++) {
-		bitmap.iNodeBitMap[i] = 0b00000000;
+		bitmap.iNodeBitMap[i] = 0b11111111;
 	}
 
 	//assign 5 blocks to the root directory 
-	bitmap.dataBitMap[0] = 0b00011111;
+	bitmap.dataBitMap[0] = 0b11111100;
 	for (i = 1; i < 254; i++) {
-		bitmap.dataBitMap[i] = 0b00000000;
+		bitmap.dataBitMap[i] = 0b11111111;
 	}
-
-
-
-	
-
-
-	// to find to the next free bit, use ffc(value)
 }
 
 void initial_root() {
 
-	//files[0].inode = 0; 
-	//strcpy(files[0].filename, "..");
-	//strcpy(files[0].filename, ".");
-	//files[0].inode = 0;
-	fileNode[0].size = 0;
-	fileNode[0].pointer[0] = 15;
+	strcpy(files[0].filename, ".");
+	files[0].inode = 0;
+	files[1].inode = 0; 
+	strcpy(files[1].filename, "..");
 
-}
+	//fileNode[0].size = 0;
+	fileNode[0].pointer[0] = 17;
 
-int FFS (char valu)
-
-{
- 	register int bit;
-
-  	if (valu == 0)
-    	return 0;
-	
-	for (bit = 1; !(valu & 1); bit++)
-  		valu >>= 1;
-  	return bit;
 }
