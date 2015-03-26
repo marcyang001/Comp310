@@ -144,6 +144,7 @@ int sfs_fopen(char *name) {
 	int actualBlock;
 	for (i = 0; i<MAX_FILES; i++){
 		if (strcmp(name, files[i].filename) ==0){
+			printf("File is found in the disk\n");
 			//search for empty descriptor table 
 			currentInode=files[i].inode;
 			for (j = 0; j < MAX_FILES; j++) {
@@ -151,6 +152,7 @@ int sfs_fopen(char *name) {
 					fileDescriptor[j].open = 1;
 					fileDescriptor[j].rw_pointer = fileNode[currentInode].size;
 					fileDescriptor[j].inode=currentInode;
+					printf("Node # of the file: %d\n", fileDescriptor[j].inode);
 					break;
 				}
 			}
@@ -218,7 +220,7 @@ int sfs_fopen(char *name) {
 		if (signData == 1) {
 			printf("Block operation!!! \n");
 			//add file to root directory with the free inode
-			actualBlock = FREEDATABLOCK + 14; // 14 is the end of the inode table
+			actualBlock = FREEDATABLOCK + 15; // 15th block is the root
 			//the first pointer of the inode of that file has to pointer to the right block
 			fileNode[iNodeNumber].pointer[0] = actualBlock;
 		
@@ -250,6 +252,7 @@ int sfs_fclose(int fileID){
 	}
 	fileDescriptor[fileID].open = 0; 
 	fileDescriptor[fileID].rw_pointer = 0;
+	fileDescriptor[fileID].inode = -1; //set the node to free 
 
 
 	return 0;
