@@ -18,13 +18,13 @@ int sfs_fopen(char *name) {
 	int sign = 0;
 	for (i = 0; i<MAX_FILES; i++){
 		//printf("GO IN HERE %d!!!\n", i);
-		//printf("Name: %s filename %s\n", name, files[i].filename);
+		printf("Name: %s filename %s\n", name, files[i].filename);
 		if (strcmp(name, files[i].filename) ==0){
 			sign = 1;
 			printf("File is found in the disk\n");
 			//search for empty descriptor table 
 			currentInode=files[i].inode;
-			//printf("File number: %d\n", i);
+			printf("File node #: %d and index %d\n", currentInode, i);
 			for (j = 0; j < MAX_FILES; j++) {
 				if (fileDescriptor[j].open == 0 && fileDescriptor[j].inode == 0) {
 					fileDescriptor[j].open = 1;
@@ -47,7 +47,7 @@ int sfs_fopen(char *name) {
 		int x = FindFreeNode();
 		
 
-		//printf("Free node #: %d\n", x);
+		printf("Free node #: %d\n", x);
 		int y = FindFreeBlock();
 		//printf("Free Block %d\n", y);
 
