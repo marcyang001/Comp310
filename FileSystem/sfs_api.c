@@ -6,8 +6,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-//#include <slack/std.h>
-//#include <slack/list.h>
 #include "disk_emu.h"
 #include "sfs_api.h"
 
@@ -114,7 +112,7 @@ int sfs_fclose(int fileID){
 			} 
 		}
 
-		return 1;
+		return 0;
 	}
 }
 
@@ -148,7 +146,7 @@ int sfs_fseek(int fileID, int offset) {
 		return 1;
 	}
 	else {
-		fprintf(stderr, "Error: File not opened or file associated");
+		fprintf(stderr, "Error: File not opened or file associated with a file Descriptor");
 		return -1;
 	}
 	
@@ -156,11 +154,7 @@ int sfs_fseek(int fileID, int offset) {
 	
 }
 
-int sfs_remove(char *file) {
 
-
-	return 0;
-}
 
 
 int sfs_get_next_filename(char* fname) {
@@ -220,7 +214,7 @@ void initial_superBlock() {
 
 void initial_Bitmap() {
 	
-	printf("Initialize bitmap\n");
+	//printf("Initialize bitmap\n");
 
 	int i; 
 	//the first bit of the bitmap is taken by the root directory
