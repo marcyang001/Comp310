@@ -5,6 +5,7 @@
 #include <stdlib.h> 
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 //#include <slack/std.h>
 //#include <slack/list.h>
 #include "disk_emu.h"
@@ -89,16 +90,32 @@ int mksfs(int fresh) {
 
 int sfs_fclose(int fileID){
 
-	if (fileID > MAX_FILES || fileID < 0 || !fileDescriptor[fileID].open) {
+	//fileID = fileID -1;
+	int i;
+	if (fileID > MAX_FILES || fileID < 0) {
+
 		return -1;
 	}
-	fileDescriptor[fileID].open = 0; 
-	fileDescriptor[fileID].rw_pointer = 0;
-	fileDescriptor[fileID].inode = -1; //reset the node to free 
-	
-	//fileNode[fileID].shiftForBit
+	//closes an already closed file
+	else if(fileDescriptor[fileID].open == 0 && fileDescriptor[fileID].inode ==-1)
+	{	
+		printf("Error in closed\n");
+    	return -1;
+  	}
+  	else {
+  		for (i = 0; i< MAX_FILES; i++) {
+			
+  			if (files[i].inode == fileDescriptor[fileID].inode) {
+				fileDescriptor[i].open = 0; 
+				fileDescriptor[i].rw_pointer = 0;
+				fileDescriptor[i].inode = -1; //reset the node to free
+				break;
+			} 
+		}
+		//fileNode[fileID].shiftForBit
 
-	return 0;
+		return 1;
+	}
 }
 
 
@@ -120,14 +137,23 @@ int sfs_fread(int fileID, char *buf, int length) {
 
 int sfs_fseek(int fileID, int offset) {
 
+	printf("FILEID : %d\n", fileID);
+
 	if (fileID > MAX_FILES || fileID < 0) {
 		return -1;
 	}
 
-	fileDescriptor[fileID].open = 1;
-	fileDescriptor[fileID].rw_pointer = offset;
+	if (fileDescriptor[fileID].open == 1){
+		fileDescriptor[fileID].rw_pointer = offset;
+		return 1;
+	}
+	else {
+		fprintf(stderr, "Error: File not opened or file associated");
+		return -1;
+	}
+	
 
-	return 0;
+	
 }
 
 int sfs_remove(char *file) {

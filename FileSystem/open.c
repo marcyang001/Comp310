@@ -11,30 +11,47 @@ int FindFreeBlock();
 
 
 int sfs_fopen(char *name) {
-	int i,j;
+	int i,j; // j is the new fd number and k is the used fd number 
+	int k = 0;
 	int currentInode;
+	i_node *i_pointer = (i_node *) malloc(sizeof(i_node));
 	//int FREEDATABLOCK;
 	//int actualBlock;
 	int sign = 0;
+	int open = 0;
 	for (i = 0; i<MAX_FILES; i++){
 		//printf("GO IN HERE %d!!!\n", i);
-		printf("Name: %s filename %s\n", name, files[i].filename);
+		//printf("Name: %s filename %s\n", name, files[i].filename);
 		if (strcmp(name, files[i].filename) ==0){
 			sign = 1;
 			printf("File is found in the disk\n");
-			//search for empty descriptor table 
-			currentInode=files[i].inode;
-			printf("File node #: %d and index %d\n", currentInode, i);
-			for (j = 0; j < MAX_FILES; j++) {
-				if (fileDescriptor[j].open == 0 && fileDescriptor[j].inode == 0) {
-					fileDescriptor[j].open = 1;
-					fileDescriptor[j].rw_pointer = fileNode[currentInode].size;
-					fileDescriptor[j].inode = currentInode;
-					//printf("Node # of the file: %d\n", fileDescriptor[j].inode);
-					
-					break;
+
+			//allocate in-memory cache
+			i_pointer -> inode = files[i].inode;
+			i_pointer -> size = fileNode[files[i].inode + 1].size;
+
+			//check if the file is already opened
+			
+			//while (file[i].inode =)
+
+
+			//if (open == 0) {
+				//search for empty descriptor table 
+				currentInode=files[i].inode;
+				//printf("File node #: %d and index %d\n", currentInode, i);
+				for (j = 0; j < MAX_FILES; j++) {
+					if (fileDescriptor[j].open == 0 && fileDescriptor[j].inode == -1 &&fileDescriptor[i].rw_pointer == 0) {
+						fileDescriptor[j].open = 1;
+						fileDescriptor[j].rw_pointer = fileNode[currentInode].size;
+						fileDescriptor[j].inode = currentInode;
+						//printf("FD #: %d\n", j);
+						//printf("Node # of the file: %d\n", fileDescriptor[j].inode);
+						
+						break;
+					}
 				}
-			}
+				//break;
+			//}
 			break;
 		}
 	}
@@ -42,7 +59,7 @@ int sfs_fopen(char *name) {
 	
 	//create a new file
 	if (sign == 0){
-		printf("Create a new file\n");
+		//printf("Create a new file\n");
 		//find free inode
 		int x = FindFreeNode();
 		
@@ -87,64 +104,22 @@ int sfs_fopen(char *name) {
 				}		
 
 
-	/*
-		// find the free data block in the data bitmap
-		for (dataIndex = 0; dataIndex < DATA_BITMAP; dataIndex++) {
-			if (bitmap.dataBitMap[dataIndex] != 0b00000000) {
-				printf("Free DATA BLOCK EXISTS\n");
-				signData = 1;
-				FREEDATABLOCK = ffs(bitmap.dataBitMap[dataIndex]);
-				
-				printf("Free data block: %d, block index %d\n", FREEDATABLOCK, dataIndex);
-
-				char temp = constant << FREEDATABLOCK;
-
-				bitmap.dataBitMap[dataIndex] = temp & bitmap.dataBitMap[dataIndex];
-
-				printf("Free block: %d, data index %d\n", ffs(bitmap.dataBitMap[dataIndex]), dataIndex);
-
-
-
-				break;
-			}
-		}
-		if (signData != 1) {
-			printf("No free data block\n");
-		}
-
-		if (signData == 1) {
-			printf("Block operation!!! \n");
-			//add file to root directory with the free inode
-			actualBlock = FREEDATABLOCK + 15; // 15th block is the root
-			//the first pointer of the inode of that file has to pointer to the right block
-			fileNode[iNodeNumber +1].pointer[0] = actualBlock;
-			printf("actual block: %d\n", actualBlock);
-
-		}
-
-		
-		
-		
-		
-		//find free block, add block number to inode.
-		//find free file descriptor
-		
-		//update the inode table
-		write_blocks(2, 13, &fileNode);
-		write_blocks(actualBlock, 1, &files);
-
-		//update the bitmap
-		write_blocks(1, 1, &bitmap);
-	*/
 		}	
 	}
 	
-	if (sign == 1) {
-		return 1;
+	if (sign == 1 && open == 1) {
+		//printf("Success\n");
+		printf("already opened\n");
+		return j;
 	}
-	else {
-		return 0;
+	else if (sign == 1 && open == 0) {
+		return j;
 	}
+	else if (sign == 0) {
+		return j;
+	}
+	else 
+		return -1;
 
 
 	
