@@ -12,7 +12,7 @@
 #include "sfs_api.h"
 
 
-
+int currentFile; //keeps track of getNextFile method 
 
 
 
@@ -55,6 +55,7 @@ int mksfs(int fresh) {
 		initial_iNode();
 		write_blocks(2, 13, &fileNode);
 		intialize_fdt();
+		currentFile = 2;
 	}
 
 	else { 
@@ -80,8 +81,7 @@ int mksfs(int fresh) {
 
 				
 		}
-		//printf("ENTER HERE!!\n");
-				
+		currentFile = 2;
 
 	}
 
@@ -113,7 +113,6 @@ int sfs_fclose(int fileID){
 				break;
 			} 
 		}
-		//fileNode[fileID].shiftForBit
 
 		return 1;
 	}
@@ -138,7 +137,7 @@ int sfs_fread(int fileID, char *buf, int length) {
 
 int sfs_fseek(int fileID, int offset) {
 
-	printf("FILEID : %d\n", fileID);
+	//printf("FILEID : %d\n", fileID);
 
 	if (fileID > MAX_FILES || fileID < 0) {
 		return -1;
@@ -164,16 +163,47 @@ int sfs_remove(char *file) {
 }
 
 
-int sfs_get_next_filename(char* filename) {
-
-
+int sfs_get_next_filename(char* fname) {
+	fname[19] = '\0';
+	int compare = (files[currentFile+1].filename[0] <= 'z' && files[currentFile+1].filename[0] >= 'a')
+		|| (files[currentFile+1].filename[0] <= 'Z' && files[currentFile+1].filename[0] >= 'A');
+	//current file start at 2
+	if (compare) {
+		printf("Enter here\n");
+		strcpy (fname, files[currentFile+1].filename);
+		printf("Next file is %s\n", fname);
+		if (fileNode[files[currentFile+1].inode].size == 0) {
+			currentFile++;
+			return currentFile;
+		}
+	}
+	else if (!compare) {
+		printf("Finish looping\n");
+		return 0;
+	
+	}
+	
+		//printf("No file in the next directory\n");
+		
 	return 0;
+		
 }
 
 int sfs_GetFileSize(const char* path) {
+	int i;
+	int fileSize;
+	for (i = 0; i< MAX_FILES; i++) {
+		//if the file in found in the directory
+		if (strcmp(path, files[i].filename)==0) {
+			fileSize = fileNode[files[i].inode].size;
+			return fileSize; 
+			break;
+		}
+	}
 
 
-	return 0;
+
+	return -1;
 }
 
 void initial_superBlock() {
