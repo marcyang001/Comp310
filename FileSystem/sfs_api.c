@@ -73,7 +73,8 @@ int mksfs(int fresh) {
 		//read the first occupied data block of each file from the inode table 
 		
 		for (i = 1; i< MAX_FILES; i++) {
-			if (fileNode[i].pointer[0] != -1 || fileNode[i].pointer[0] != 0) {
+			if (fileNode[i].pointer[0] > 0) {
+				printf("Enter here\n");
 				read_blocks(fileNode[i].pointer[0], 1, &files[i+1]);
 			}
 
@@ -90,14 +91,13 @@ int mksfs(int fresh) {
 
 int sfs_fclose(int fileID){
 
-	//fileID = fileID -1;
 	int i;
 	if (fileID > MAX_FILES || fileID < 0) {
-
+		printf("Error here???\n");
 		return -1;
 	}
 	//closes an already closed file
-	else if(fileDescriptor[fileID].open == 0 && fileDescriptor[fileID].inode ==-1)
+	else if(fileDescriptor[fileID].occupied != 1)
 	{	
 		printf("Error in closed\n");
     	return -1;
@@ -109,6 +109,7 @@ int sfs_fclose(int fileID){
 				fileDescriptor[i].open = 0; 
 				fileDescriptor[i].rw_pointer = 0;
 				fileDescriptor[i].inode = -1; //reset the node to free
+				fileDescriptor[i].occupied = 0;
 				break;
 			} 
 		}
@@ -237,6 +238,7 @@ void intialize_fdt() {
 		fileDescriptor[i].open = 0;
 		fileDescriptor[i].rw_pointer = 0;
 		fileDescriptor[i].inode = -1;
+		fileDescriptor[i].occupied = 0;
 	}
 
 } 
