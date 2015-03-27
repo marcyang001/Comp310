@@ -12,7 +12,7 @@
  * upper-case letters and periods ('.') characters. Feel free to
  * change this if your implementation differs.
  */
-#define MAX_FNAME_LENGTH 20   /* Assume at most 20 characters (16.3) */
+#define MAX_FNAME_LENGTH 21   /* Assume at most 20 characters (16.3) */
 
 /* The maximum number of files to attempt to open or create.  NOTE: we
  * do not _require_ that you support this many files. This is just to
@@ -81,8 +81,10 @@ main(int argc, char **argv)
 
   /* First we open two files and attempt to write data to them.
    */
+  
   for (i = 0; i < 2; i++) {
     names[i] = rand_name();
+    names[i][20] = '\0';
     fds[i] = sfs_fopen(names[i]);
     if (fds[i] < 0) {
       fprintf(stderr, "ERROR: creating first test file %s\n", names[i]);
@@ -206,6 +208,7 @@ main(int argc, char **argv)
   ncreate = 0;
   for (i = 0; i < MAX_FD; i++) {
     names[i] = rand_name();
+    names[i][19] = '\0';
     fds[i] = sfs_fopen(names[i]);
     if (fds[i] < 0) {
       break;
@@ -367,6 +370,7 @@ main(int argc, char **argv)
 
   fprintf(stderr, "Test program exiting with %d errors\n", error_count);
   return (error_count);
+
 }
 
 

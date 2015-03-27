@@ -11,10 +11,12 @@ int FindFreeBlock();
 
 
 int sfs_fopen(char *name) {
+	//name[strlen(name)-1] = '\0';
+
 	int i,j; // j is the new fd number and k is the used fd number 
-	int k = 0;
+	int k;
 	int currentInode;
-	i_node *i_pointer = (i_node *) malloc(sizeof(i_node));
+	//i_node *i_pointer = (i_node *) malloc(sizeof(i_node));
 	//int FREEDATABLOCK;
 	//int actualBlock;
 	int sign = 0;
@@ -27,23 +29,28 @@ int sfs_fopen(char *name) {
 			printf("File is found in the disk\n");
 
 			//allocate in-memory cache
-			i_pointer -> inode = files[i].inode;
-			i_pointer -> size = fileNode[files[i].inode + 1].size;
+			//i_pointer -> inode = files[i].inode;
+			//i_pointer -> size = fileNode[files[i].inode + 1].size;
 
 			//check if the file is already opened
-			
-			//while (file[i].inode =)
+			for (k = 0; k < MAX_FILES; k++) {
+				if (files[i].inode == fileDescriptor[k].inode) {
+					open = 1;
+					break;
+				}
+			}
 
 
-			//if (open == 0) {
+			if (open == 0) {
 				//search for empty descriptor table 
 				currentInode=files[i].inode;
 				//printf("File node #: %d and index %d\n", currentInode, i);
 				for (j = 0; j < MAX_FILES; j++) {
-					if (fileDescriptor[j].open == 0 && fileDescriptor[j].inode == -1 &&fileDescriptor[i].rw_pointer == 0) {
+					if (fileDescriptor[j].occupied == 0) {
 						fileDescriptor[j].open = 1;
 						fileDescriptor[j].rw_pointer = fileNode[currentInode].size;
 						fileDescriptor[j].inode = currentInode;
+						fileDescriptor[j].occupied = 1;
 						//printf("FD #: %d\n", j);
 						//printf("Node # of the file: %d\n", fileDescriptor[j].inode);
 						
@@ -51,7 +58,7 @@ int sfs_fopen(char *name) {
 					}
 				}
 				//break;
-			//}
+			}
 			break;
 		}
 	}
@@ -64,7 +71,7 @@ int sfs_fopen(char *name) {
 		int x = FindFreeNode();
 		
 
-		printf("Free node #: %d\n", x);
+		//printf("Free node #: %d\n", x);
 		int y = FindFreeBlock();
 		//printf("Free Block %d\n", y);
 
@@ -74,7 +81,7 @@ int sfs_fopen(char *name) {
 
 				//update data block 
 				strcpy(files[x+1].filename, name);
-				files[x+1].filename[19] = '\0';
+				files[x+1].filename[20] = '\0';
 				files[x+1].inode = x;
 				write_blocks(y, 1, &files[x+1]);
 
@@ -98,6 +105,7 @@ int sfs_fopen(char *name) {
 						fileDescriptor[j].open = 1;
 						fileDescriptor[j].rw_pointer = 0;
 						fileDescriptor[j].inode = x;
+						fileDescriptor[j].occupied = 1;
 							//printf("Node # of the file: %d\n", fileDescriptor[j].inode);
 						break;
 					}
@@ -110,12 +118,14 @@ int sfs_fopen(char *name) {
 	if (sign == 1 && open == 1) {
 		//printf("Success\n");
 		printf("already opened\n");
-		return j;
+		return k;
 	}
 	else if (sign == 1 && open == 0) {
+		printf("No new descriptor\n");
 		return j;
 	}
 	else if (sign == 0) {
+		printf("new file\n");
 		return j;
 	}
 	else 
