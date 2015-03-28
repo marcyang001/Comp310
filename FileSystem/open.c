@@ -16,7 +16,7 @@ int sfs_fopen(char *name) {
 	int i,j; // j is the new fd number and k is the used fd number 
 	int k;
 	int currentInode;
-	//i_node *i_pointer = (i_node *) malloc(sizeof(i_node));
+	
 	//int FREEDATABLOCK;
 	//int actualBlock;
 	int sign = 0;
@@ -28,9 +28,6 @@ int sfs_fopen(char *name) {
 			sign = 1;
 			printf("File is found in the disk\n");
 
-			//allocate in-memory cache
-			//i_pointer -> inode = files[i].inode;
-			//i_pointer -> size = fileNode[files[i].inode + 1].size;
 
 			//check if the file is already opened
 			for (k = 0; k < MAX_FILES; k++) {
@@ -101,7 +98,7 @@ int sfs_fopen(char *name) {
 				//update file descriptor table
 
 				for (j = 0; j < MAX_FILES; j++) {
-					if (fileDescriptor[j].open == 0) {
+					if (fileDescriptor[j].occupied == 0) {
 						fileDescriptor[j].open = 1;
 						fileDescriptor[j].rw_pointer = 0;
 						fileDescriptor[j].inode = x;
@@ -125,7 +122,7 @@ int sfs_fopen(char *name) {
 		return j;
 	}
 	else if (sign == 0) {
-		printf("new file\n");
+		//printf("new file\n");
 		return j;
 	}
 	else 

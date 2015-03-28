@@ -246,13 +246,17 @@ void initial_root() {
 }
 
 void initial_iNode() {
-	int i;
+	int i, j;
 	for (i = 1; i < MAX_FILES; i++) {
 		fileNode[i].size = -1;
-		fileNode[i].pointer[0] = -1;
+		//initialize the first 12 direct pointers to -1
+		for (j = 0; j < NUM_DIRECT_PTR; j++) {
+			fileNode[i].pointer[j] = -1;
+		}
+		//initialize the indirect pointer to -1
+		fileNode[i].indirect = -1;
+		
 	}
-
-
 }
 
 

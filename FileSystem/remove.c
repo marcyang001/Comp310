@@ -12,6 +12,7 @@ void remove_bit_data(int blockNumber);
 int sfs_remove(char *file) {
 	int i, j; 
 	int found = 0;
+	int currentNode;
 	//root_directory *temp = (root_directory *)malloc (sizeof(root_directory));
 	//1. remove from the file descriptor table (if necessary)
 	//2. remove from the inode bitmap
@@ -32,12 +33,17 @@ int sfs_remove(char *file) {
 					break;
 				}
 			}
+			//remove from the data block bitmap
+			//check the first 12 direct pointers 
+			currentNode = files[i].inode;
+			for (j = 0; j < 12; j++){
+				//using the or gate to turn off the bits so it doesnt matter
+				remove_bit_data(fileNode[currentNode].pointer[j]);
+			}
+			//manipulate the indirect pointer
+
 			// remove from the inode bitmap 
 			remove_bit_inode(files[i].inode);
-			//remove from the data block bitmap
-			
-
-
 
 
 			break;
