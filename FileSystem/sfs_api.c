@@ -90,14 +90,14 @@ int sfs_fclose(int fileID){
 
 	int i;
 	if (fileID > MAX_FILES || fileID < 0) {
-		printf("Error here???\n");
+		
 		return -1;
 	}
 	//closes an already closed file
-	else if(fileDescriptor[fileID].occupied != 1)
+	else if(fileDescriptor[fileID].open == 0)
 	{	
-		printf("Error in closed\n");
-    	return -1;
+		//printf("Error in closed\n");
+    	return 0;
   	}
   	else {
   		for (i = 0; i< MAX_FILES; i++) {
@@ -256,6 +256,45 @@ void intialize_fdt() {
 	}
 
 } 
+
+
+int FindFreeBlock() { 
+
+	int dataIndex,FREEDATABLOCK, blockNumber, actualBlock; 
+	char constant = 0b11111111;
+	char temp;
+	int available = 0;
+	// find the free data block in the data bitmap
+	for (dataIndex = 0; dataIndex < DATA_BITMAP; dataIndex++) {
+		if (bitmap.dataBitMap[dataIndex] != 0b00000000) {
+			available = 1;
+			//printf("Free DATA BLOCK EXISTS\n");
+			FREEDATABLOCK = ffs(bitmap.dataBitMap[dataIndex]);
+				
+			//printf("Free data block: %d, block index %d\n", FREEDATABLOCK, dataIndex);
+
+			temp = constant << FREEDATABLOCK;
+
+			bitmap.dataBitMap[dataIndex] = temp & bitmap.dataBitMap[dataIndex];
+
+			blockNumber = FREEDATABLOCK + (dataIndex * 8) - 1;
+			//first block starts with 0;
+
+			//printf("Free block: %d, data index %d\n", ffs(bitmap.dataBitMap[dataIndex]), dataIndex);
+
+			break;
+		}
+	}
+	if (available == 1) {
+		actualBlock = blockNumber + 15;
+		return actualBlock;
+	}
+	else {
+		return -1;
+	}
+
+}
+
 
 int ffz (char valu) {
 
