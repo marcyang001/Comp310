@@ -10,13 +10,15 @@
 void remove_bit_inode(int inodeNumber);
 void remove_bit_data(int blockNumber);
 int sfs_remove(char *file) {
-	int i, j; 
+	int i, j, k; // i = files j = fileDescriptor  k = num_pointer 
 	int found = 0;
 	int currentNode;
+	int indexBlock;
+	int num_pointer[PTR_INDEXBLOCK]; //store the actually block numbers, block # starts at 0
 	//root_directory *temp = (root_directory *)malloc (sizeof(root_directory));
 	//1. remove from the file descriptor table (if necessary)
-	//2. remove from the inode bitmap
-	//3. remove from the data block bitmap using the inode
+	//2. remove from the data block bitmap using the inode
+	//3. remove from the inode bitmap 
 	//4. change the name to NULL
 	
 	for (i = 0; i< MAX_FILES; i++) {
@@ -40,21 +42,35 @@ int sfs_remove(char *file) {
 				//using the or gate to turn off the bits so it doesnt matter
 				remove_bit_data(fileNode[currentNode].pointer[j]);
 			}
-			//manipulate the indirect pointer
+			//manipulate the indirect pointer to remove the rest of the data blocks
+			//this is the index block
+			indexBlock = fileNode[currentNode].indirect;
+			if (indexBlock > 0) {
+				//read the index block
+				read_blocks(indexBlock, 1, &num_pointer);
+				for (k = 0; k < PTR_INDEXBLOCK; k++) {
+					//if the pointer actually points to a block
+					if (num_pointer[k] > 0) {
+						remove_bit_data(num_pointer[k]);
+					}
+				}
 
+			}
 			// remove from the inode bitmap 
 			remove_bit_inode(files[i].inode);
 
-
+			//change the file name to ""\0;
+			memcpy(files[i].filename, "", sizeof(""));
+			files[i].filename[19] = '\0';
 			break;
 		}
 	}
 
 	if (found) {
-		return 1;
+		return 0;
 	}
 	else 
-		return 0;
+		return -1;
 }
 
 void remove_bit_inode(int inodeNumber) {

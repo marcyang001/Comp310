@@ -70,10 +70,9 @@ int mksfs(int fresh) {
 
 		intialize_fdt();
 		//read the first occupied data block of each file from the inode table 
-		
+		//because the first block of each file store the information
 		for (i = 1; i< MAX_FILES; i++) {
 			if (fileNode[i].pointer[0] > 0) {
-				printf("Enter here\n");
 				read_blocks(fileNode[i].pointer[0], 1, &files[i+1]);
 			}
 
@@ -117,19 +116,6 @@ int sfs_fclose(int fileID){
 }
 
 
-int sfs_fwrite(int fileID, const char *buf, int length) {
-
-
-
-	return 0;
-}
-
-int sfs_fread(int fileID, char *buf, int length) {
-
-
-
-	return 0;
-}
 
 // seek changes read and write pointer by offset
 

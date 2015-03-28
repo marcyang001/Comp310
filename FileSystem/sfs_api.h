@@ -7,6 +7,7 @@
 #define INODE_BITMAP 13
 #define DATA_BITMAP 510
 #define NUM_DIRECT_PTR 12
+#define PTR_INDEXBLOCK 128
 
 
 int mksfs(int fresh);
