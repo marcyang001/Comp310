@@ -16,6 +16,7 @@ int sfs_fopen(char *name) {
 	int i,j; // j is the new fd number and k is the used fd number 
 	int k;
 	int currentInode;
+	int availableFD = 0;
 	
 	//int FREEDATABLOCK;
 	//int actualBlock;
@@ -26,7 +27,7 @@ int sfs_fopen(char *name) {
 		//printf("Name: %s filename %s\n", name, files[i].filename);
 		if (strcmp(name, files[i].filename) ==0){
 			sign = 1;
-			printf("File is found in the disk\n");
+			//printf("File is found in the disk\n");
 
 
 			//check if the file is already opened
@@ -44,6 +45,7 @@ int sfs_fopen(char *name) {
 				//printf("File node #: %d and index %d\n", currentInode, i);
 				for (j = 0; j < MAX_FILES; j++) {
 					if (fileDescriptor[j].occupied == 0) {
+						availableFD = 1;
 						fileDescriptor[j].open = 1;
 						fileDescriptor[j].rw_pointer = fileNode[currentInode].size;
 						fileDescriptor[j].inode = currentInode;
@@ -99,6 +101,7 @@ int sfs_fopen(char *name) {
 
 				for (j = 0; j < MAX_FILES; j++) {
 					if (fileDescriptor[j].occupied == 0) {
+						availableFD = 1;
 						fileDescriptor[j].open = 1;
 						fileDescriptor[j].rw_pointer = 0;
 						fileDescriptor[j].inode = x;
@@ -114,14 +117,14 @@ int sfs_fopen(char *name) {
 	
 	if (sign == 1 && open == 1) {
 		//printf("Success\n");
-		printf("already opened\n");
+		//printf("already opened\n");
 		return k;
 	}
-	else if (sign == 1 && open == 0) {
-		printf("No new descriptor\n");
+	else if (sign == 1 && open == 0 && availableFD == 1) {
+		//printf("No new descriptor\n");
 		return j;
 	}
-	else if (sign == 0) {
+	else if (sign == 0 && availableFD == 1) {
 		//printf("new file\n");
 		return j;
 	}
