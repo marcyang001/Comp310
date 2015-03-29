@@ -119,11 +119,13 @@ int sfs_fwrite(int fileID, const char *buf, int length) {
 
 	}		
 
-	fileNode[fileDescriptor[fileID].inode].size = bytesWritten;
+	fileNode[fileDescriptor[fileID].inode].size += bytesWritten;
 
 	write_blocks(2, 13, &fileNode);
 	write_blocks(1, 1, &bitmap);
-	write_blocks(FindindexBlock, 1, &indirectpointers);
+	if (FindindexBlock > 0 ) {
+		write_blocks(FindindexBlock, 1, &indirectpointers);
+	}
 
 	//bytesWritten += lastwritesize;
 	
@@ -244,7 +246,9 @@ int firstTimeWrite(int fileID, const char *buf, int length, int previousBlock, i
 
 	write_blocks(2, 13, &fileNode);
 	write_blocks(1, 1, &bitmap);
-	write_blocks(FindindexBlock, 1, &indirectpointers);
+	if (FindindexBlock > 0) {
+		write_blocks(FindindexBlock, 1, &indirectpointers);
+	}
 
 
 	printf("NUM OF BYTES WRITTEN: %d\n", bytesWritten);
