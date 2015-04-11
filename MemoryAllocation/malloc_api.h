@@ -1,4 +1,4 @@
-#define align4(x) (((((x)-1) >> 2) <<2) +4)
+
 
 #include <stdlib.h>
 
@@ -13,12 +13,13 @@ char *my_malloc_error = "ERROR!";
 
 
 struct block_meta { 
-
+	char data[1];
 	size_t length; 
 	struct block_meta *next;
 	struct block_meta *prev;
 	int nextFree; //0 = not free, 1 = free 
 	int prevFree;
+	
 
 };
 
@@ -27,13 +28,4 @@ struct block_meta {
 typedef struct block_meta *t_block;
 
 
-// this is for the allocated data blocks
-struct block_meta2 {
-
-	size_t length;
-	int nextFree; //0 = not free, 1 = free 
-	int prevFree;
-};
-
-typedef struct block_meta2 *s_block;
 
