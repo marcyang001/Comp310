@@ -11,16 +11,15 @@
 #include "malloc_api.h"
 //int brk(void *end of data  segment) 
 int freeblockcount;
-int policy =1;
+int policy = 0;
 int currentFreeSpace;
 free_block head = NULL;
+void testcases();
 void *find_free_block(int size);
 void addtoFreeList(void *address) {
 	
-	int first = 0;
 	free_block temp = head;
 	free_block thisBlock = address;
-	free_block current;
 
 	if (temp == NULL) {
 		head = thisBlock;
@@ -45,30 +44,104 @@ void addtoFreeList(void *address) {
 	currentFreeSpace += thisBlock->length;
 	freeblockcount++;
 }
-/*
-void listDelete(t_block b) {
-	t_block temp = b;
-	if (b->next == NULL) {
+
+void listDelete(void *addr) {
+	
+	free_block temp = addr;
+	free_block iterator1;
+	free_block iterator2;
+	//delete the head
+	if(temp == head) {
+		printf("delete the first block\n");
+		head = (free_block)head->next;
+		head->prev = NULL;
+
+	}
+	//delete the last block in the free list 
+	else if (temp->next == NULL) {
 		printf("Delete the last one \n");
-		b->next = NULL;
-		b->prev->next = NULL;
-		b->prev = NULL;
+		iterator1 = (free_block)(temp->prev);
+		iterator1->next = NULL;
+		temp->prev = NULL;
+		//temp->prev->next = NULL;
+		//temp->prev = NULL;
 
 	}
-	if (temp->next != NULL) {
-		b->prev->next = temp->next;
-		b->next->prev = temp->prev;
-	}
-	b->next = NULL;
-	b->prev = NULL;
+	//delete a block that is in the middle of the list
+	else {
+		printf("Delete the one in the middle\n");
+		//deallocate the pointer from the previous block
+		iterator1 = (free_block)(temp->prev);
+		iterator1->next = temp->next;
+		//deallocated the pointer from the next block
+		iterator2 = (free_block)(temp->next);
+		iterator2->prev = temp->prev;
+		//deallocate the current block
+		temp->prev = NULL;
+		temp->next = NULL;
 
+
+	}
+	currentFreeSpace -= temp->length;
+	freeblockcount--;
 }
-*/
+
+
 int main(int argc, char *argv[]) {
 
 	free_block b;
 	b= sbrk(0);
-	sbrk(sizeof(struct block_meta)+ 20);
+	sbrk(sizeof(struct block_meta1)+ 20);
+	printf("address B %p\n", b);
+	b->length = 20;
+	addtoFreeList(b);
+	printf("HEAD length :%d and head address %p\n", head->length, head);
+
+	free_block c;
+	c= sbrk(0);
+	sbrk(sizeof(struct block_meta1)+ 30);
+	printf("address C %p\n", c);
+	c->length = 30;
+	addtoFreeList(c);
+	free_block t = (free_block)(head->next);
+	printf("%d\n", t->length);
+
+	t_block d;
+	d = sbrk(0);
+	sbrk(sizeof(struct block_meta1)+ 40);
+	printf("address D %p\n", d);
+	d->length = 40;
+	addtoFreeList(d);
+
+	t= (free_block)(t->next);
+	printf("%d\n", t->length);
+	listDelete(c);
+
+	head = (free_block)(head->next);
+	printf("HEAD NEXT %d and address %p\n", head->length, head);
+
+	if (head->next == NULL){
+		printf("block removed!!!!\n");
+	}
+
+
+
+	///////////////////////////////////////////////////////////
+
+	printf("head Length %d\n", head->length);
+	printf("NUMBER OF FREE BLOCKS: %d\n", freeblockcount);
+	int endaddress = (int)sbrk(0) - (int)head;
+	printf("NUMBER OF BYTES ALLOCATED %d\n", endaddress - freeblockcount *freeBlockMETA - currentFreeSpace);
+	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
+	//testcases();
+	printf("%p\n", sbrk(0));
+	return 0;
+}
+
+void testcases() {
+		free_block b;
+	b= sbrk(0);
+	sbrk(sizeof(struct block_meta1)+ 20);
 	printf("address B %p\n", b);
 	b->length = 20;
 	
@@ -78,7 +151,7 @@ int main(int argc, char *argv[]) {
 
 	free_block c;
 	c= sbrk(0);
-	sbrk(sizeof(struct block_meta)+ 30);
+	sbrk(sizeof(struct block_meta1)+ 30);
 	printf("address C %p\n", c);
 	c->length = 30;
 	addtoFreeList(c);
@@ -88,7 +161,7 @@ int main(int argc, char *argv[]) {
 
 	t_block d;
 	d = sbrk(0);
-	sbrk(sizeof(struct block_meta)+ 40);
+	sbrk(sizeof(struct block_meta1)+ 40);
 	printf("address D %p\n", d);
 	d->length = 40;
 	addtoFreeList(d);
@@ -98,23 +171,22 @@ int main(int argc, char *argv[]) {
 
 	t_block e;
 	e = sbrk(0);
-	sbrk(sizeof(struct block_meta)+ 50);
+	sbrk(sizeof(struct block_meta1)+ 50);
 	printf("address E %p\n", e);
 	e->length = 50;
 	addtoFreeList(e);
 	t = (free_block)(t->next);
+	t = (free_block)(t->prev);
 	printf("%d\n", t->length);
 	//t = (free_block)(t->prev);
 
-
+	//void listDelete(void *addr)
 	printf("NUMBER OF FREE BLOCKS: %d\n", freeblockcount);
 	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
 	find_free_block(19);
-
-
-
-	return 0;
 }
+
+
 
 
 void *find_free_block(int size) {
