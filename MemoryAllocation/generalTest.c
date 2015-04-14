@@ -133,26 +133,29 @@ int main(int argc, char *argv[]) {
 	listDelete(c);
 	listDelete(d);
 
-	//if (head == NULL) {
-	//	printf("EMPITY LIST\n");
-	//}
-	//if (head->next == NULL){
-	//	printf("block not removed!!!!\n");
-	//}
-	//else {
-	//	t = (free_block)(head->next);
-	//	printf("HEAD NEXT %d and address %p\n", t->length, t);
-	//}
+	my_free(b);
 
 
+
+
+	if (head == NULL) {
+		printf("EMPITY FREE LIST\n");
+	}
+	else if (head->next == NULL){
+		printf("block not removed!!!!\n");
+	}
+	else {
+		t = (free_block)(head->next);
+		printf("HEAD NEXT %d and address %p\n", t->length, t);
+	}
 
 
 	///////////////////////////////////////////////////////////
 
 	
 	printf("NUMBER OF FREE BLOCKS: %d\n", freeblockcount);
-	//int endaddress = (int)sbrk(0) - (int)base;
-	//printf("NUMBER OF BYTES ALLOCATED %d\n", endaddress - freeblockcount *freeBlockMETA - currentFreeSpace);
+	int endaddress = (int)sbrk(0) - (int)base;
+	printf("NUMBER OF BYTES ALLOCATED %d\n", endaddress - freeblockcount *freeBlockMETA - currentFreeSpace);
 	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
 	//testcases();
 	printf("%p\n", sbrk(0));
@@ -160,22 +163,32 @@ int main(int argc, char *argv[]) {
 }
 
 int valid_addr(void *p) {
-//	if (base) {
-//		if ( p >=base && p<= sbrk(0)) {
-//			return p;
-//		}
-//	}
-//	else 
-	return 0;
+	if (base) {
+		if ( p >=base && p<= sbrk(0)) {
+			return (int)p;
+		}
+	}
+	else 
+		return 0;
 }
 
 
 void my_free(void *ptr) {
-	
+
+	free_block newBlock;
+	t_block heapBlock;
+
+	if(valid_addr(ptr)) {
+		newBlock = ptr;
+		addtoFreeList(newBlock);
+		
+		heapBlock = ptr;
+		heapBlock->prevFree = 0;
+		heapBlock->nextFree = 0;
+		
 
 
-
-
+	}
 }
 
 
