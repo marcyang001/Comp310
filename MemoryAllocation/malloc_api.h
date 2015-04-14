@@ -1,28 +1,42 @@
 
-
 #include <stdlib.h>
+
+
+struct block_meta1 { 
+	char data[1];
+	short prevFree; //1 = used, 0 = free. the address is at block(starting address) + 2
+	int length; 
+	int *next;
+	int *prev;
+};
+
+typedef struct block_meta1 *free_block; 
+
+struct block_meta {
+	char data[1];
+	short prevFree;
+	int length;
+	short nextFree;
+};
+
+
+// now the type is t_block, which is a pointer
+typedef struct block_meta *t_block;
+
+
 
 
 void *my_malloc(int size);
 void my_free(void *ptr);
 void my_mallopt(int policy);
 void my_mallinfo();
+void *valid_addr(void *p);
+t_block merge (t_block first, t_block second);
 
 
-char *my_malloc_error = "ERROR SETTING MALLOC!";
 
 
-struct block_meta { 
-	char data[1];
-	short prevFree; //1 = used, 0 = free. the address is at block(starting address) + 2
-	size_t length; 
-	struct block_meta *next;
-	struct block_meta *prev;
-};
+#define allocatedBlockMETA sizeof(struct block_meta)
 
-// now the type is t_block, which is a pointer
-//t_block is for the free blocks
-typedef struct block_meta *t_block;
-
-
+#define freeBlockMETA sizeof(struct block_meta1)
 

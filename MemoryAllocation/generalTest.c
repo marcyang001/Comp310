@@ -11,7 +11,7 @@
 #include "malloc_api.h"
 //int brk(void *end of data  segment) 
 
-t_block head = NULL;
+free_block head = NULL;
 
 void addtoFreeList(t_block b) {
 	t_block temp;
@@ -25,11 +25,12 @@ void addtoFreeList(t_block b) {
 		printf("Enter here!!!\n");
 		t_block current = head;
 		while (current != NULL) {
-			
+
 			if (current->next == NULL) {
 				current->next = temp;
-				current->next->prev = current;
-				current->next->next = NULL;
+				temp->prev = current;
+				current = temp;
+				current->next = NULL;
 			}
 			current = current->next;
 		}
@@ -38,9 +39,26 @@ void addtoFreeList(t_block b) {
 
 }
 
+void listDelete(t_block b) {
+	t_block temp = b;
+	if (b->next == NULL) {
+		printf("Delete the last one \n");
+		b->next = NULL;
+		b->prev->next = NULL;
+		b->prev = NULL;
+
+	}
+	if (temp->next != NULL) {
+		b->prev->next = temp->next;
+		b->next->prev = temp->prev;
+	}
+	b->next = NULL;
+	b->prev = NULL;
+
+}
 
 int main(int argc, char *argv[]) {
-
+/*
 	t_block b;
 	b= sbrk(0);
 		//printf("Initial address %p\n", b);
@@ -67,6 +85,18 @@ int main(int argc, char *argv[]) {
 	addtoFreeList(d);
 	printf("%d\n", head->next->next->length);
 
+	listDelete(d);
+	printf("%d\n", head->next->next->length);
+*/
+
+
+	int i = 0; 
+	if (i ==0 ) {
+		printf("HEY\n");
+	}
+	if (i < 1) {
+		printf("YOOOO\n");
+	}
 
 	return 0;
 }
