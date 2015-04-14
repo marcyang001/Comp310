@@ -11,7 +11,7 @@
 #include "malloc_api.h"
 //int brk(void *end of data  segment) 
 int freeblockcount;
-int policy =0;
+int policy =1;
 int currentFreeSpace;
 free_block head = NULL;
 void *find_free_block(int size);
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 
 	printf("NUMBER OF FREE BLOCKS: %d\n", freeblockcount);
 	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
-	find_free_block(50);
+	find_free_block(19);
 
 
 
@@ -151,7 +151,7 @@ void *find_free_block(int size) {
 	}
 	//best fit
 	if (policy == 1) {
-		printf("USING THE first fit policy\n");
+		printf("USING THE best fit policy\n");
 		if (head != NULL) {
 			while (f->next != NULL) {
 				sign = 1;
@@ -165,7 +165,7 @@ void *find_free_block(int size) {
 			}
 			//if the last block is reached
 			if (f->next == NULL) {
-				if (!(f->length >= totalSize)) {
+				if (!(f->length == size)) {
 					f = NULL;
 				}
 				if(!sign)
