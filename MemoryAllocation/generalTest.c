@@ -115,14 +115,16 @@ int main(int argc, char *argv[]) {
 
 	t= (free_block)(t->next);
 	printf("%d\n", t->length);
-	listDelete(c);
-
-	head = (free_block)(head->next);
-	printf("HEAD NEXT %d and address %p\n", head->length, head);
-
+	//listDelete(c);
+	listDelete(d);
 	if (head->next == NULL){
 		printf("block removed!!!!\n");
 	}
+	else {
+		t = (free_block)(head->next);
+		printf("HEAD NEXT %d and address %p\n", t->length, t);
+	}
+
 
 
 
