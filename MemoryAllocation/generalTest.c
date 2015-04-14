@@ -14,8 +14,13 @@ int freeblockcount;
 int policy = 0;
 int currentFreeSpace;
 free_block head = NULL;
+
 void testcases();
 void *find_free_block(int size);
+
+void *base = NULL;
+
+
 void addtoFreeList(void *address) {
 	
 	free_block temp = head;
@@ -51,12 +56,19 @@ void listDelete(void *addr) {
 	free_block iterator1;
 	free_block iterator2;
 	//delete the head
-	if(temp == head) {
+	if(temp == head && head->next != NULL) {
 		printf("delete the first block\n");
 		head = (free_block)head->next;
 		head->prev = NULL;
 
 	}
+	else if (temp == head && head->next == NULL) {
+		printf("Delete the only block in the list\n");
+		head->next = NULL;
+		head->prev = NULL;
+		head = NULL;
+	}
+
 	//delete the last block in the free list 
 	else if (temp->next == NULL) {
 		printf("Delete the last one \n");
@@ -91,6 +103,7 @@ int main(int argc, char *argv[]) {
 
 	free_block b;
 	b= sbrk(0);
+	base = b;
 	sbrk(sizeof(struct block_meta1)+ 20);
 	printf("address B %p\n", b);
 	b->length = 20;
@@ -115,79 +128,55 @@ int main(int argc, char *argv[]) {
 
 	t= (free_block)(t->next);
 	printf("%d\n", t->length);
-	//listDelete(c);
+	
+	listDelete(b);
+	listDelete(c);
 	listDelete(d);
-	if (head->next == NULL){
-		printf("block removed!!!!\n");
-	}
-	else {
-		t = (free_block)(head->next);
-		printf("HEAD NEXT %d and address %p\n", t->length, t);
-	}
+
+	//if (head == NULL) {
+	//	printf("EMPITY LIST\n");
+	//}
+	//if (head->next == NULL){
+	//	printf("block not removed!!!!\n");
+	//}
+	//else {
+	//	t = (free_block)(head->next);
+	//	printf("HEAD NEXT %d and address %p\n", t->length, t);
+	//}
 
 
 
 
 	///////////////////////////////////////////////////////////
 
-	printf("head Length %d\n", head->length);
+	
 	printf("NUMBER OF FREE BLOCKS: %d\n", freeblockcount);
-	int endaddress = (int)sbrk(0) - (int)head;
-	printf("NUMBER OF BYTES ALLOCATED %d\n", endaddress - freeblockcount *freeBlockMETA - currentFreeSpace);
+	//int endaddress = (int)sbrk(0) - (int)base;
+	//printf("NUMBER OF BYTES ALLOCATED %d\n", endaddress - freeblockcount *freeBlockMETA - currentFreeSpace);
 	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
 	//testcases();
 	printf("%p\n", sbrk(0));
 	return 0;
 }
 
-void testcases() {
-		free_block b;
-	b= sbrk(0);
-	sbrk(sizeof(struct block_meta1)+ 20);
-	printf("address B %p\n", b);
-	b->length = 20;
-	
-
-	addtoFreeList(b);
-	printf("HEAD length :%d\n", head->length);
-
-	free_block c;
-	c= sbrk(0);
-	sbrk(sizeof(struct block_meta1)+ 30);
-	printf("address C %p\n", c);
-	c->length = 30;
-	addtoFreeList(c);
-	free_block t = (free_block)(head->next);
-	//t = (free_block)(t->prev);
-	printf("%d\n", t->length);
-
-	t_block d;
-	d = sbrk(0);
-	sbrk(sizeof(struct block_meta1)+ 40);
-	printf("address D %p\n", d);
-	d->length = 40;
-	addtoFreeList(d);
-	t = (free_block)(t->next);
-	//t = (free_block)(t->prev);
-	printf("%d\n", t->length);
-
-	t_block e;
-	e = sbrk(0);
-	sbrk(sizeof(struct block_meta1)+ 50);
-	printf("address E %p\n", e);
-	e->length = 50;
-	addtoFreeList(e);
-	t = (free_block)(t->next);
-	t = (free_block)(t->prev);
-	printf("%d\n", t->length);
-	//t = (free_block)(t->prev);
-
-	//void listDelete(void *addr)
-	printf("NUMBER OF FREE BLOCKS: %d\n", freeblockcount);
-	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
-	find_free_block(19);
+int valid_addr(void *p) {
+//	if (base) {
+//		if ( p >=base && p<= sbrk(0)) {
+//			return p;
+//		}
+//	}
+//	else 
+	return 0;
 }
 
+
+void my_free(void *ptr) {
+	
+
+
+
+
+}
 
 
 
@@ -253,4 +242,54 @@ void *find_free_block(int size) {
 
 	printf("address of free block %p\n", f);
 	return (f);
+}
+
+
+
+void testcases() {
+		free_block b;
+	b= sbrk(0);
+	sbrk(sizeof(struct block_meta1)+ 20);
+	printf("address B %p\n", b);
+	b->length = 20;
+	
+
+	addtoFreeList(b);
+	printf("HEAD length :%d\n", head->length);
+
+	free_block c;
+	c= sbrk(0);
+	sbrk(sizeof(struct block_meta1)+ 30);
+	printf("address C %p\n", c);
+	c->length = 30;
+	addtoFreeList(c);
+	free_block t = (free_block)(head->next);
+	//t = (free_block)(t->prev);
+	printf("%d\n", t->length);
+
+	t_block d;
+	d = sbrk(0);
+	sbrk(sizeof(struct block_meta1)+ 40);
+	printf("address D %p\n", d);
+	d->length = 40;
+	addtoFreeList(d);
+	t = (free_block)(t->next);
+	//t = (free_block)(t->prev);
+	printf("%d\n", t->length);
+
+	t_block e;
+	e = sbrk(0);
+	sbrk(sizeof(struct block_meta1)+ 50);
+	printf("address E %p\n", e);
+	e->length = 50;
+	addtoFreeList(e);
+	t = (free_block)(t->next);
+	t = (free_block)(t->prev);
+	printf("%d\n", t->length);
+	//t = (free_block)(t->prev);
+
+	//void listDelete(void *addr)
+	printf("NUMBER OF FREE BLOCKS: %d\n", freeblockcount);
+	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
+	find_free_block(19);
 }
