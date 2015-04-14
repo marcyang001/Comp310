@@ -13,13 +13,14 @@
 char *my_malloc_error = "ERROR SETTING MALLOC!";
 
 
-free_block head; //head of the free list
-int freeblockcount = 0;
+free_block head = NULL; //head of the free list
+int freeblockcount;
 int policy;
+int currentFreeSpace;
 void *base = NULL;
 
-void addtoFreeList(t_block b);
-void listDelete(t_block b);
+void addtoFreeList(void *address);
+void listDelete(void *addr);
 void my_mallinfo();
 void *valid_addr(void *p);
 t_block merge (t_block first, t_block second);
@@ -40,12 +41,12 @@ void *find_free_block(int size) {
 					break;
 				}
 				else {
-					f = (free_block *)f->next;
+					f = (free_block)f->next;
 				}
 			}
 			//if the last block is reached
 			if (f->next == NULL) {
-				if (!(f->length >= totalSize)) {
+				if (!(f->length >= size)) {
 					f = NULL;
 				}
 				if(!sign)
@@ -58,7 +59,7 @@ void *find_free_block(int size) {
 	}
 	//best fit
 	if (policy == 1) {
-		printf("USING THE first fit policy\n");
+		printf("USING THE best fit policy\n");
 		if (head != NULL) {
 			while (f->next != NULL) {
 				sign = 1;
@@ -67,12 +68,12 @@ void *find_free_block(int size) {
 					break;
 				}
 				else {
-					f = (free_block *)f->next;
+					f = (free_block)f->next;
 				}
 			}
 			//if the last block is reached
 			if (f->next == NULL) {
-				if (!(f->length >= totalSize)) {
+				if (!(f->length == size)) {
 					f = NULL;
 				}
 				if(!sign)
@@ -99,7 +100,6 @@ t_block extend_heap(t_block last, size_t s) {
 	b->prevFree = 1;
 	b->nextFree = 1;
 	return (b);
-
 }
 
 
@@ -119,8 +119,6 @@ void *my_malloc(int size) {
 			b->length = s;
 			b->prevFree = 1;
 			b->nextFree = 1;
-
-
 		}
 		else {
 		//	printf("CANNOT FIND A BLOCK\n");
@@ -128,8 +126,6 @@ void *my_malloc(int size) {
 			last = sbrk(0);
 			//No fitting block, extend the heap
 			b = extend_heap(last, s);
-
-
 		//	printf("ADDRESS EXTENDED: %p\n", b);
 			if (!b)
 				return my_malloc_error;
@@ -153,35 +149,91 @@ void *my_malloc(int size) {
 
 	return (b->data);
 }
-/*
-void listDelete(t_block b) {
-	t_block temp = b;
-	if (b->next == NULL) {
+
+void listDelete(void *addr) {
+	
+	free_block temp = addr;
+	free_block iterator1;
+	free_block iterator2;
+	//delete the head
+	if(temp == head) {
+		printf("delete the first block\n");
+		head = (free_block)head->next;
+		head->prev = NULL;
+
+	}
+	//delete the last block in the free list 
+	else if (temp->next == NULL) {
 		printf("Delete the last one \n");
-		b->next = NULL;
-		b->prev->next = NULL;
-		b->prev = NULL;
+		iterator1 = (free_block)(temp->prev);
+		iterator1->next = NULL;
+		temp->prev = NULL;
+		//temp->prev->next = NULL;
+		//temp->prev = NULL;
 
 	}
-	if (temp->next != NULL) {
-		b->prev->next = temp->next;
-		b->next->prev = temp->prev;
-	}
-	b->next = NULL;
-	b->prev = NULL;
+	//delete a block that is in the middle of the list
+	else {
+		printf("Delete the one in the middle\n");
+		//deallocate the pointer from the previous block
+		iterator1 = (free_block)(temp->prev);
+		iterator1->next = temp->next;
+		//deallocated the pointer from the next block
+		iterator2 = (free_block)(temp->next);
+		iterator2->prev = temp->prev;
+		//deallocate the current block
+		temp->prev = NULL;
+		temp->next = NULL;
 
+
+	}
+	currentFreeSpace -= temp->length;
+	freeblockcount--;
 }
 
-*/
+void addtoFreeList(void *address) {
+	
+	free_block temp = head;
+	free_block thisBlock = address;
+
+	if (temp == NULL) {
+		head = thisBlock;
+		head->next = NULL;
+		head->prev = NULL;
+		head->length = thisBlock->length;
+
+	}
+	else {
+		while (temp->next != NULL) {
+			temp =(free_block) temp->next;
+		}
+		if (temp->next == NULL) {
+			temp->next = (int*)thisBlock;
+			thisBlock->prev = (int*)temp;
+			temp =(free_block) temp->next;
+			temp->length = thisBlock->length;
+			temp->next =NULL;
+		}
+
+	}
+	currentFreeSpace += thisBlock->length;
+	freeblockcount++;
+}
+
+
+
 void my_mallopt(int pol){
 	policy = pol;
 }
 
 void my_mallinfo() {
-
+	printf("\n**********My Malloc Info*******************\n");
 	//because of the head that is not free;
 	printf("Number of free blocks: %d\n", freeblockcount);
-
+	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
+	int endaddress = (int)sbrk(0) - (int)base;
+	printf("NUMBER OF BYTES ALLOCATED %d\n", endaddress - freeblockcount *freeBlockMETA - currentFreeSpace);
+	printf("********************************************\n");
 }
 
 void *valid_addr(void *p) {
@@ -192,13 +244,9 @@ void *valid_addr(void *p) {
 	}
 	return 0;
 }
-/*
-t_block merge (t_block first, t_block second) {
 
-	first->length += META_SIZE + second->length;
-	return first;
-}
-*/
+
+
 /*
 
 void my_free(void *ptr) {
