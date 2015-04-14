@@ -10,35 +10,42 @@
 
 #include "malloc_api.h"
 //int brk(void *end of data  segment) 
-
+int freeblockcount;
+int policy =0;
+int currentFreeSpace;
 free_block head = NULL;
+void *find_free_block(int size);
+void addtoFreeList(void *address) {
+	
+	int first = 0;
+	free_block temp = head;
+	free_block thisBlock = address;
+	free_block current;
 
-void addtoFreeList(t_block b) {
-	t_block temp;
-	temp = b;
-	if (head == NULL) {
-		head = temp;
+	if (temp == NULL) {
+		head = thisBlock;
 		head->next = NULL;
 		head->prev = NULL;
+		head->length = thisBlock->length;
+
 	}
 	else {
-		printf("Enter here!!!\n");
-		t_block current = head;
-		while (current != NULL) {
-
-			if (current->next == NULL) {
-				current->next = temp;
-				temp->prev = current;
-				current = temp;
-				current->next = NULL;
-			}
-			current = current->next;
+		while (temp->next != NULL) {
+			temp =(free_block) temp->next;
 		}
+		if (temp->next == NULL) {
+			temp->next = (int*)thisBlock;
+			thisBlock->prev = (int*)temp;
+			temp =(free_block) temp->next;
+			temp->length = thisBlock->length;
+			temp->next =NULL;
+		}
+
 	}
-
-
+	currentFreeSpace += thisBlock->length;
+	freeblockcount++;
 }
-
+/*
 void listDelete(t_block b) {
 	t_block temp = b;
 	if (b->next == NULL) {
@@ -56,47 +63,120 @@ void listDelete(t_block b) {
 	b->prev = NULL;
 
 }
-
+*/
 int main(int argc, char *argv[]) {
-/*
-	t_block b;
+
+	free_block b;
 	b= sbrk(0);
-		//printf("Initial address %p\n", b);
-	sbrk(sizeof(struct block_meta)+ 20 + 2);
-
+	sbrk(sizeof(struct block_meta)+ 20);
+	printf("address B %p\n", b);
 	b->length = 20;
-	addtoFreeList(b);
 	
-	t_block c;
+
+	addtoFreeList(b);
+	printf("HEAD length :%d\n", head->length);
+
+	free_block c;
 	c= sbrk(0);
-	//printf("Initial address %p\n", b);
-	sbrk(sizeof(struct block_meta)+ 30 + 2);
+	sbrk(sizeof(struct block_meta)+ 30);
+	printf("address C %p\n", c);
 	c->length = 30;
-	printf("%d\n", head->length);
-
 	addtoFreeList(c);
-
-	printf("%d\n", head->next->length);
+	free_block t = (free_block)(head->next);
+	//t = (free_block)(t->prev);
+	printf("%d\n", t->length);
 
 	t_block d;
 	d = sbrk(0);
-	sbrk(sizeof(struct block_meta)+ 40 + 2);
+	sbrk(sizeof(struct block_meta)+ 40);
+	printf("address D %p\n", d);
 	d->length = 40;
 	addtoFreeList(d);
-	printf("%d\n", head->next->next->length);
+	t = (free_block)(t->next);
+	//t = (free_block)(t->prev);
+	printf("%d\n", t->length);
 
-	listDelete(d);
-	printf("%d\n", head->next->next->length);
-*/
+	t_block e;
+	e = sbrk(0);
+	sbrk(sizeof(struct block_meta)+ 50);
+	printf("address E %p\n", e);
+	e->length = 50;
+	addtoFreeList(e);
+	t = (free_block)(t->next);
+	printf("%d\n", t->length);
+	//t = (free_block)(t->prev);
 
 
-	int i = 0; 
-	if (i ==0 ) {
-		printf("HEY\n");
-	}
-	if (i < 1) {
-		printf("YOOOO\n");
-	}
+	printf("NUMBER OF FREE BLOCKS: %d\n", freeblockcount);
+	printf("CURRENT FREE SPACE %d\n", currentFreeSpace);
+	find_free_block(50);
+
+
 
 	return 0;
+}
+
+
+void *find_free_block(int size) {
+	printf("Enter here policy %d\n", policy);
+	int totalSize = size + sizeof(allocatedBlockMETA);
+	free_block f = head;
+	int sign = 0;
+	//first fit 
+	if (policy == 0) {
+		printf("USING THE first fit policy\n");
+		if (head != NULL) {
+			while (f->next != NULL) {
+				sign = 1;
+				//check for the size is bigger or equal
+				if (f->length >= size) {
+					break;
+				}
+				else {
+					f = (free_block)f->next;
+				}
+			}
+			//if the last block is reached
+			if (f->next == NULL) {
+				if (!(f->length >= size)) {
+					f = NULL;
+				}
+				if(!sign)
+					head = NULL;
+			}
+		}
+		else {
+			f = NULL;
+		}
+	}
+	//best fit
+	if (policy == 1) {
+		printf("USING THE first fit policy\n");
+		if (head != NULL) {
+			while (f->next != NULL) {
+				sign = 1;
+				//check for the size is bigger or equal
+				if (f->length == size) {
+					break;
+				}
+				else {
+					f = (free_block)f->next;
+				}
+			}
+			//if the last block is reached
+			if (f->next == NULL) {
+				if (!(f->length >= totalSize)) {
+					f = NULL;
+				}
+				if(!sign)
+					head = NULL;
+			}
+		}
+		else {
+			f = NULL;
+		}
+	}
+
+	printf("address of free block %p\n", f);
+	return (f);
 }
