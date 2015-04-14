@@ -22,7 +22,7 @@ void *base = NULL;
 void addtoFreeList(void *address);
 void listDelete(void *addr);
 void my_mallinfo();
-void *valid_addr(void *p);
+int valid_addr(void *p);
 t_block merge (t_block first, t_block second);
 
 void *find_free_block(int size) {
@@ -162,6 +162,12 @@ void listDelete(void *addr) {
 		head->prev = NULL;
 
 	}
+	else if (temp == head && head->next == NULL) {
+		printf("Delete the only block in the list\n");
+		head->next = NULL;
+		head->prev = NULL;
+		head = NULL;
+	}
 	//delete the last block in the free list 
 	else if (temp->next == NULL) {
 		printf("Delete the last one \n");
@@ -236,6 +242,8 @@ void my_mallinfo() {
 	printf("********************************************\n");
 }
 
+
+/*
 void *valid_addr(void *p) {
 	if (base != NULL) {
 		if (p >= base && p <sbrk(0)) {
@@ -247,7 +255,7 @@ void *valid_addr(void *p) {
 
 
 
-/*
+
 
 void my_free(void *ptr) {
 	
